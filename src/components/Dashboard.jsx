@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ArrowUpRight, ArrowDownLeft, TrendingUp, ShoppingCart, Utensils, Gift, X, Calendar, DollarSign, Tag, Bell } from 'lucide-react';
+import Navbar from './Navbar';
 
 // AddExpense Component (remains unchanged)
 const AddExpense = ({ onClose, onSubmit }) => {
@@ -33,7 +34,9 @@ const AddExpense = ({ onClose, onSubmit }) => {
   };
 
   return (
+    
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+      <Navbar/>
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
