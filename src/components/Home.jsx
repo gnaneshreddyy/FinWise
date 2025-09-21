@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Menu, X, ChevronRight, TrendingUp, Shield, Zap, Eye, EyeOff, ArrowLeft, Receipt } from 'lucide-react';
-import Dashboard from './Dashboard'; // Assuming Dashboard component exists elsewhere
+import Dashboard from './Dashboard';
+
+// STEP 1: ADD FIREBASE IMPORTS
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
+
 
 const FinzApp = () => {
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'login', 'signup', 'dashboard'
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // For mobile menu (if implemented)
-  const [scrolled, setScrolled] = useState(false); // For sticky header (if implemented)
+  const [currentView, setCurrentView] = useState('home');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
 
-  // Handle scroll for potential header styling (removed in this iteration for simplicity, but kept state)
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
@@ -19,19 +23,31 @@ const FinzApp = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Removed navItems as they are for a dashboard view, not landing page nav.
-  // const navItems = [ /* ... */ ];
-
   const handleLogin = (e) => {
     e.preventDefault();
     console.log("Logging in...", loginForm);
-    setCurrentView('dashboard'); // Navigate to dashboard on successful login
+    // TODO: Implement Firebase email/password login
+    setCurrentView('dashboard');
   };
 
   const handleSignup = (e) => {
     e.preventDefault();
     console.log("Signing up...", signupForm);
-    setCurrentView('dashboard'); // Navigate to dashboard on successful signup
+    // TODO: Implement Firebase email/password signup
+    setCurrentView('dashboard');
+  };
+
+  // STEP 2: CREATE THE GOOGLE SIGN-IN HANDLER
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      console.log("Successfully signed in with Google:", user.displayName);
+      // The onAuthStateChanged listener in App.jsx will automatically handle
+      // switching the view to the dashboard upon successful login.
+    } catch (error) {
+      console.error("Google sign-in error:", error.message);
+    }
   };
 
   const handleLoginInputChange = (e) => {
@@ -44,10 +60,9 @@ const FinzApp = () => {
 
   // --- VIEWS ---
 
-  // Landing Page (Home)
   if (currentView === 'home') {
     return (
-      <div className="min-h-screen bg-gray-950 text-gray-200 font-sans"> {/* Applied general font-sans */}
+      <div className="min-h-screen bg-gray-950 text-gray-200 font-sans">
         {/* Navbar */}
         <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-gray-950/80 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
           <div className="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -142,7 +157,6 @@ const FinzApp = () => {
                 </button>
               </div>
               <div className="order-1 md:order-2">
-                {/* Placeholder for Dashboard Image */}
                 <div className="bg-gray-800 rounded-xl p-6 aspect-video flex items-center justify-center text-gray-500 text-xl border border-gray-700 shadow-xl">
                   Dashboard Preview Image Here
                 </div>
@@ -192,22 +206,19 @@ const FinzApp = () => {
             </div>
           </section>
 
-          {/* How It Works / Product Deep Dive Section - Specific layout from your image */}
+          {/* How It Works Section */}
           <section className="py-20 md:py-28 bg-gray-950" id="how-it-works">
             <div className="container max-w-6xl mx-auto px-6">
               <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold text-white mb-4">
-                  How It Works / Product Deep Dive
+                  How It Works
                 </h2>
                 <p className="text-xl text-gray-400">
                   A visual journey through FinWise's core financial intelligence tools.
                 </p>
               </div>
-
-              {/* Market Simulator Row */}
               <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
                 <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800 shadow-lg">
-                  {/* Placeholder for image/visual 1 */}
                   <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 text-lg">
                     Market Simulator Visual
                   </div>
@@ -227,8 +238,6 @@ const FinzApp = () => {
                   </button>
                 </div>
               </div>
-
-              {/* Receipt Scanning Row */}
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div className="text-center md:text-left order-2 md:order-1">
                   <div className="inline-flex items-center gap-4 mb-4">
@@ -245,7 +254,6 @@ const FinzApp = () => {
                   </button>
                 </div>
                 <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800 shadow-lg order-1 md:order-2">
-                  {/* Placeholder for image/visual 2 */}
                   <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 text-lg">
                     Receipt Scanning Visual
                   </div>
@@ -254,7 +262,7 @@ const FinzApp = () => {
             </div>
           </section>
 
-          {/* Frequently Asked Questions Section */}
+          {/* FAQ Section */}
           <section className="py-20 md:py-28 bg-gray-950" id="faq">
             <div className="container mx-auto px-6 max-w-4xl">
               <div className="text-center mb-16">
@@ -262,7 +270,6 @@ const FinzApp = () => {
                 <p className="text-lg text-gray-400">Have questions? We've got answers.</p>
               </div>
               <div className="space-y-6">
-                {/* FAQ Item 1 */}
                 <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800 hover:border-blue-500/50 transition-all duration-300 cursor-pointer">
                   <button className="flex justify-between items-center w-full text-left">
                     <h3 className="text-xl font-semibold text-white">Is FinWise secure?</h3>
@@ -272,7 +279,6 @@ const FinzApp = () => {
                     Yes, FinWise uses bank-level encryption and robust security protocols to protect your data. Your financial information is always safe and confidential with FinWise.
                   </p>
                 </div>
-                {/* FAQ Item 2 */}
                 <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800 hover:border-purple-500/50 transition-all duration-300 cursor-pointer">
                   <button className="flex justify-between items-center w-full text-left">
                     <h3 className="text-xl font-semibold text-white">What is the pricing?</h3>
@@ -282,7 +288,6 @@ const FinzApp = () => {
                     FinWise offers various subscription plans tailored to different needs, including a free tier for basic features and premium tiers for advanced analytics.
                   </p>
                 </div>
-                {/* FAQ Item 3 */}
                 <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800 hover:border-pink-500/50 transition-all duration-300 cursor-pointer">
                   <button className="flex justify-between items-center w-full text-left">
                     <h3 className="text-xl font-semibold text-white">How does FinWise help with investments?</h3>
@@ -296,7 +301,7 @@ const FinzApp = () => {
             </div>
           </section>
 
-          {/* Ready to Transform Section */}
+          {/* Call to Action Section */}
           <section className="py-20 md:py-28 bg-gradient-to-r from-gray-800 to-purple-900">
             <div className="container mx-auto px-6 text-center">
               <h2 className="text-4xl font-bold text-white mb-6">Ready to Transform Your Financial Future?</h2>
@@ -317,12 +322,6 @@ const FinzApp = () => {
                   FinWise
                 </h3>
                 <p className="text-sm mb-4">Smart financial management, for everyone.</p>
-                <div className="flex space-x-4">
-                  {/* Social Icons Placeholder */}
-                  <a href="#" className="hover:text-white transition-colors"><i className="fab fa-facebook-f"></i>FB</a> {/* Placeholder for actual icon */}
-                  <a href="#" className="hover:text-white transition-colors"><i className="fab fa-twitter"></i>TW</a> {/* Placeholder for actual icon */}
-                  <a href="#" className="hover:text-white transition-colors"><i className="fab fa-linkedin-in"></i>LN</a> {/* Placeholder for actual icon */}
-                </div>
               </div>
               <div>
                 <h4 className="font-semibold text-white mb-4">Product</h4>
@@ -391,14 +390,24 @@ const FinzApp = () => {
                 Sign In <ChevronRight className="ml-2 h-5 w-5" />
               </button>
             </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-700"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-gray-900/50 px-2 text-gray-400 backdrop-blur-sm">Or continue with</span>
+              </div>
+            </div>
+            <button
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg">
+              Sign in with Google
+            </button>
+            
             <div className="mt-6 text-center">
               <p className="text-gray-400">Don't have an account? <button onClick={() => setCurrentView('signup')} className="text-blue-400 hover:text-blue-300 transition-colors duration-200 font-semibold">Sign up</button></p>
             </div>
-          </div>
-          <div className="mt-6 text-center">
-            <button onClick={() => setCurrentView('dashboard')} className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200 underline">
-              Demo Login (Skip Authentication)
-            </button>
           </div>
         </div>
       </div>
@@ -446,6 +455,21 @@ const FinzApp = () => {
                 Create Account <ChevronRight className="ml-2 h-5 w-5" />
               </button>
             </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-700"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-gray-900/50 px-2 text-gray-400 backdrop-blur-sm">Or sign up with</span>
+              </div>
+            </div>
+            <button
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg">
+              Sign up with Google
+            </button>
+            
             <div className="mt-6 text-center">
               <p className="text-gray-400">Already have an account? <button onClick={() => setCurrentView('login')} className="text-blue-400 hover:text-blue-300 transition-colors duration-200 font-semibold">Sign in</button></p>
             </div>
@@ -456,7 +480,6 @@ const FinzApp = () => {
   }
 
   // Dashboard View (shown when logged in)
-  // This will render the Dashboard component when currentView is 'dashboard'
   return <Dashboard onLogout={() => setCurrentView('home')} />;
 };
 
