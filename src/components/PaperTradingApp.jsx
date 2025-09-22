@@ -39,7 +39,7 @@ const PaperTradingApp = () => {
   });
 
   // API configuration
-  const FINNHUB_API_KEY = 'demo';
+  const FINNHUB_API_KEY = 'REDACTED_FINNHUB_API_KEY';
 
   // Stock symbols
   const stockSymbols = {
