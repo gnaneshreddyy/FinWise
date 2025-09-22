@@ -10,12 +10,14 @@ import Squads from './components/Squads';
 import UserProfile from './components/UserProfile';
 import Rewards from './components/Rewards';
 import Insights from './components/Insights';
+import Personalization from './components/Personalization';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [appView, setAppView] = useState('dashboard'); // 'home' | 'dashboard' | 'papertrading' | 'squads' | 'profile' | 'rewards' | 'insights'
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [rewards, setRewards] = useState([]);
 
   const handleLogout = async () => {
     try {
@@ -89,9 +91,14 @@ function App() {
             onBack={() => setAppView('squads')}
           />
         ) : appView === 'rewards' ? (
-          <Rewards onBack={() => setAppView('squads')} />
+          <Rewards onBack={() => setAppView('squads')} rewards={rewards} />
         ) : appView === 'insights' ? (
           <Insights />
+        ) : appView === 'personalization' ? (
+          <Personalization
+            onBack={() => setAppView('dashboard')}
+            onRewardsGenerated={(newRewards) => { setRewards((prev) => [...newRewards, ...prev]); setAppView('rewards'); }}
+          />
         ) : (
           <Dashboard user={user} />
         )
