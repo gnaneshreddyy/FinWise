@@ -7,7 +7,7 @@ import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 
 
-const FinzApp = () => {
+const FinzApp = ({ onMockLogin, hideHeader = false }) => {
   const [currentView, setCurrentView] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -26,14 +26,22 @@ const FinzApp = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     console.log("Logging in...", loginForm);
-    // TODO: Implement Firebase email/password login
+    if (onMockLogin) {
+      onMockLogin();
+      return;
+    }
+    // Fall back to old local view switch if no handler provided
     setCurrentView('dashboard');
   };
 
   const handleSignup = (e) => {
     e.preventDefault();
     console.log("Signing up...", signupForm);
-    // TODO: Implement Firebase email/password signup
+    if (onMockLogin) {
+      onMockLogin();
+      return;
+    }
+    // Fall back to old local view switch if no handler provided
     setCurrentView('dashboard');
   };
 
@@ -63,58 +71,50 @@ const FinzApp = () => {
   if (currentView === 'home') {
     return (
       <div className="min-h-screen bg-gray-950 text-gray-200 font-sans">
-        {/* Navbar */}
-        <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-gray-950/80 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
-          <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-            {/* Logo */}
-            <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 bg-clip-text text-transparent">
-              FinWise
-            </div>
-
-            {/* Desktop Nav */}
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
-              <a href="#how-it-works" className="text-gray-300 hover:text-white transition-colors">How It Works</a>
-              <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</a>
-              <a href="#resources" className="text-gray-300 hover:text-white transition-colors">Resources</a>
-            </div>
-
-            {/* Auth Buttons - Desktop */}
-            <div className="hidden md:flex items-center space-x-4">
-              <button onClick={() => setCurrentView('login')} className="text-gray-300 hover:text-white transition-colors px-4 py-2 rounded-lg">
-                Login
-              </button>
-              <button onClick={() => setCurrentView('signup')} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300">
-                Get Started
-              </button>
-            </div>
-
-            {/* Mobile Menu Toggle */}
-            <div className="md:hidden">
-              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white focus:outline-none">
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Menu */}
-          {isMenuOpen && (
-            <div className="md:hidden bg-gray-950/90 backdrop-blur-md pb-4">
-              <div className="flex flex-col items-center space-y-4 pt-4">
-                <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">Features</a>
-                <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">How It Works</a>
-                <a href="#pricing" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">Pricing</a>
-                <a href="#resources" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">Resources</a>
-                <button onClick={() => { setCurrentView('login'); setIsMenuOpen(false); }} className="text-gray-300 hover:text-white transition-colors text-lg">
+        {!hideHeader && (
+          <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-gray-950/80 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
+            <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+              <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 bg-clip-text text-transparent">
+                FinWise
+              </div>
+              <div className="hidden md:flex items-center space-x-8">
+                <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
+                <a href="#how-it-works" className="text-gray-300 hover:text-white transition-colors">How It Works</a>
+                <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</a>
+                <a href="#resources" className="text-gray-300 hover:text-white transition-colors">Resources</a>
+              </div>
+              <div className="hidden md:flex items-center space-x-4">
+                <button onClick={() => setCurrentView('login')} className="text-gray-300 hover:text-white transition-colors px-4 py-2 rounded-lg">
                   Login
                 </button>
-                <button onClick={() => { setCurrentView('signup'); setIsMenuOpen(false); }} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300 text-lg">
+                <button onClick={() => setCurrentView('signup')} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300">
                   Get Started
                 </button>
               </div>
+              <div className="md:hidden">
+                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white focus:outline-none">
+                  {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                </button>
+              </div>
             </div>
-          )}
-        </nav>
+            {isMenuOpen && (
+              <div className="md:hidden bg-gray-950/90 backdrop-blur-md pb-4">
+                <div className="flex flex-col items-center space-y-4 pt-4">
+                  <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">Features</a>
+                  <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">How It Works</a>
+                  <a href="#pricing" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">Pricing</a>
+                  <a href="#resources" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">Resources</a>
+                  <button onClick={() => { setCurrentView('login'); setIsMenuOpen(false); }} className="text-gray-300 hover:text-white transition-colors text-lg">
+                    Login
+                  </button>
+                  <button onClick={() => { setCurrentView('signup'); setIsMenuOpen(false); }} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300 text-lg">
+                    Get Started
+                  </button>
+                </div>
+              </div>
+            )}
+          </nav>
+        )}
 
         <div className="relative overflow-hidden">
           {/* Hero Section */}
