@@ -3,13 +3,17 @@ import { Bell } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
-const Navbar = ({ user }) => {
+const Navbar = ({ user, appView, onChangeView, onLogout }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      if (onLogout) {
+        await onLogout();
+      } else {
+        await signOut(auth);
+      }
       setIsDropdownOpen(false);
     } catch (error) {
       console.error("Error signing out:", error);
@@ -38,19 +42,53 @@ const Navbar = ({ user }) => {
         <div className="grid grid-cols-3 items-center h-16">
           {/* Left: Logo */}
           <div className="flex justify-start">
-            <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 bg-clip-text text-transparent">
+            <button
+              onClick={() => onChangeView && onChangeView('home')}
+              className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 bg-clip-text text-transparent"
+              title="Go to Home"
+            >
               FinWise
-            </div>
+            </button>
           </div>
           
           {/* Center: Links */}
           <div className="hidden md:flex items-center justify-center space-x-6">
-            <a href="#" className="text-gray-300 hover:text-white transition-colors">Home</a>
-            <a href="#" className="text-white font-medium">Dashboard</a>
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); onChangeView && onChangeView('home'); }}
+              className="text-gray-300 hover:text-white transition-colors"
+            >
+              Home
+            </a>
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); onChangeView && onChangeView('dashboard'); }}
+              className={`transition-colors ${appView === 'dashboard' ? 'text-white font-medium' : 'text-gray-300 hover:text-white'}`}
+            >
+              Dashboard
+            </a>
             <a href="#" className="text-gray-300 hover:text-white transition-colors">Transactions</a>
-            <a href="#" className="text-gray-300 hover:text-white transition-colors">Social</a>
-            <a href="#" className="text-gray-300 hover:text-white transition-colors">Learn</a>
-            <a href="#" className="text-gray-300 hover:text-white transition-colors">Savings</a>
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); onChangeView && onChangeView('squads'); }}
+              className={`transition-colors ${appView === 'squads' ? 'text-white font-medium' : 'text-gray-300 hover:text-white'}`}
+            >
+              Social
+            </a>
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); onChangeView && onChangeView('papertrading'); }}
+              className={`transition-colors ${appView === 'papertrading' ? 'text-white font-medium' : 'text-gray-300 hover:text-white'}`}
+            >
+              PaperTrading
+            </a>
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); onChangeView && onChangeView('rewards'); }}
+              className={`transition-colors ${appView === 'rewards' ? 'text-white font-medium' : 'text-gray-300 hover:text-white'}`}
+            >
+              Rewards
+            </a>
           </div>
 
           {/* Right: Actions */}
@@ -60,6 +98,14 @@ const Navbar = ({ user }) => {
             </button>
             
             {user ? (
+              <>
+              <button
+                onClick={handleLogout}
+                className="hidden md:inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium text-gray-200 hover:text-white hover:bg-gray-800 border border-gray-700"
+                title="Logout"
+              >
+                Logout
+              </button>
               <div className="relative" ref={dropdownRef}>
                 {/* Profile Icon Button */}
                 <button
@@ -104,11 +150,8 @@ const Navbar = ({ user }) => {
                   </div>
                 )}
               </div>
-            ) : (
-              <button className="text-gray-300 hover:text-white transition-colors">
-                Login
-              </button>
-            )}
+              </>
+            ) : null}
           </div>
         </div>
       </div>

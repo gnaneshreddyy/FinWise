@@ -2,14 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase'; // Make sure you have this file
 import Home from './components/Home';
-import Dashboard from './components/Dashboard'; // You will need to create this component
+import Dashboard from './components/Dashboard';
 import Navbar from './components/Navbar';
 import Chatbot from './components/Chatbot';
 import PaperTradingApp from './components/PaperTradingApp';
+import Squads from './components/Squads';
+import UserProfile from './components/UserProfile';
+import Rewards from './components/Rewards';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [appView, setAppView] = useState('dashboard'); // 'home' | 'dashboard' | 'papertrading' | 'squads' | 'profile' | 'rewards'
+  const [selectedProfile, setSelectedProfile] = useState(null);
+
+  const handleLogout = async () => {
+    try {
+      if (auth.currentUser) {
+        await auth.signOut();
+      }
+    } catch (e) {
+      // no-op for mock users
+    } finally {
+      setUser(null);
+      setAppView('dashboard');
+    }
+  };
+
+  const handleMockLogin = () => {
+    setUser({ email: 'guest@local' });
+    setAppView('dashboard');
+  };
 
   // This effect runs once when the app starts and listens for auth changes
   useEffect(() => {
@@ -34,16 +57,43 @@ function App() {
   }
 
   return (
-    // Use a React Fragment <> to return multiple components
     <>
-      {/* The Navbar receives the user object to display different links (e.g., Logout) */}
-      <Navbar user={user} />
+      {user && (
+        <Navbar
+          user={user}
+          appView={appView}
+          onChangeView={setAppView}
+          onLogout={handleLogout}
+        />
+      )}
 
-      {/* This is the main content of the page */}
-      {/* If 'user' exists (is not null), show the Dashboard. Otherwise, show the Home page. */}
-      {user ? <Dashboard user={user} /> : <Home />}
-    <PaperTradingApp/>
-      {/* The Chatbot component is included here so it can be displayed on all pages */}
+      {!user && <Home onMockLogin={handleMockLogin} />}
+
+      {user && (
+        appView === 'home' ? (
+          <Home hideHeader={true} />
+        ) : appView === 'dashboard' ? (
+          <Dashboard user={user} />
+        ) : appView === 'papertrading' ? (
+          <PaperTradingApp />
+        ) : appView === 'squads' ? (
+          <Squads
+            currentUser={user}
+            onOpenProfile={(profile) => { setSelectedProfile(profile); setAppView('profile'); }}
+            onGoToRewards={() => setAppView('rewards')}
+          />
+        ) : appView === 'profile' ? (
+          <UserProfile
+            profile={selectedProfile}
+            onBack={() => setAppView('squads')}
+          />
+        ) : appView === 'rewards' ? (
+          <Rewards onBack={() => setAppView('squads')} />
+        ) : (
+          <Dashboard user={user} />
+        )
+      )}
+
       <Chatbot />
     </>
   );

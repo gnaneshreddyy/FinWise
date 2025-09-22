@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ArrowUpRight, ArrowDownLeft, TrendingUp, ShoppingCart, Utensils, Gift, X, Calendar, DollarSign, Tag, Bell } from 'lucide-react';
-import Navbar from './Navbar';
 
 const Dashboard = () => {
   // AddExpense Component (Nested)
@@ -238,9 +237,6 @@ const Dashboard = () => {
           onSubmit={handleAddTransaction}
         />
       )}
-
-      {/* --- NAVBAR --- */}
-      <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
