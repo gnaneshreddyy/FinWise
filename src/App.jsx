@@ -5,6 +5,7 @@ import Home from './components/Home';
 import Dashboard from './components/Dashboard'; // You will need to create this component
 import Navbar from './components/Navbar';
 import Chatbot from './components/Chatbot';
+import PaperTradingApp from './components/PaperTradingApp';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -41,7 +42,7 @@ function App() {
       {/* This is the main content of the page */}
       {/* If 'user' exists (is not null), show the Dashboard. Otherwise, show the Home page. */}
       {user ? <Dashboard user={user} /> : <Home />}
-
+    <PaperTradingApp/>
       {/* The Chatbot component is included here so it can be displayed on all pages */}
       <Chatbot />
     </>
