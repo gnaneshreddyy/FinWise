@@ -103,3 +103,4 @@ export default function Squads({ currentUser, onOpenProfile, onGoToRewards }) {
 }
 
 
+

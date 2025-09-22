@@ -9,11 +9,12 @@ import PaperTradingApp from './components/PaperTradingApp';
 import Squads from './components/Squads';
 import UserProfile from './components/UserProfile';
 import Rewards from './components/Rewards';
+import Insights from './components/Insights';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [appView, setAppView] = useState('dashboard'); // 'home' | 'dashboard' | 'papertrading' | 'squads' | 'profile' | 'rewards'
+  const [appView, setAppView] = useState('dashboard'); // 'home' | 'dashboard' | 'papertrading' | 'squads' | 'profile' | 'rewards' | 'insights'
   const [selectedProfile, setSelectedProfile] = useState(null);
 
   const handleLogout = async () => {
@@ -89,6 +90,8 @@ function App() {
           />
         ) : appView === 'rewards' ? (
           <Rewards onBack={() => setAppView('squads')} />
+        ) : appView === 'insights' ? (
+          <Insights />
         ) : (
           <Dashboard user={user} />
         )
