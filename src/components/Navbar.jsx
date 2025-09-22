@@ -77,6 +77,13 @@ const Navbar = ({ user, appView, onChangeView, onLogout }) => {
             </a>
             <a
               href="#"
+              onClick={(e) => { e.preventDefault(); onChangeView && onChangeView('insights'); }}
+              className={`transition-colors ${appView === 'insights' ? 'text-white font-medium' : 'text-gray-300 hover:text-white'}`}
+            >
+              Insights
+            </a>
+            <a
+              href="#"
               onClick={(e) => { e.preventDefault(); onChangeView && onChangeView('papertrading'); }}
               className={`transition-colors ${appView === 'papertrading' ? 'text-white font-medium' : 'text-gray-300 hover:text-white'}`}
             >
