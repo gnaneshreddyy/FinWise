@@ -1,12 +1,40 @@
-# React + Vite
+# 💰 FinWise
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> A smart and simple personal finance analyzer that helps users visualize, understand, and improve their spending habits.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## Expanding the ESLint configuration
+- 📊 **Visual Reports:** Interactive charts to track income, expenses, and savings  
+- 💡 **Insights Panel:** Highlights spending trends and saving opportunities  
+- ⚙️ **Dynamic Dashboard:** Real-time updates with a smooth, responsive design  
+- 👤 **Personalized Experience:** Tailors insights based on user behavior  
+- 🔐 **Privacy Focused:** No external data sharing — everything runs locally
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🧠 Tech Stack
+
+| Category | Technologies Used |
+|-----------|-------------------|
+| **Frontend** | React.js |
+| **State Management** | useState, useEffect |
+| **Charts** | Recharts |
+| **Styling** | Tailwind CSS |
+| **Icons** | Lucide React |
+
+---
+
+## 🌐 Live Demo
+
+### 🔗 Visit Here:  
+👉 [**FinWise on Vercel**](https://finwise-phi-eight.vercel.app/)
+
+> You can log in with **any credentials** to explore the app.  
+> 🚧 *Note:* Several features are actively being developed and improved.
+
+
+---
+
+⭐ **If you like this project, give it a star on GitHub to support further development!**
