@@ -1,18 +1,6 @@
 import React, { useMemo, useState } from 'react';
 
-// Reuse sample expenses for now; replace with real user data when available
-const sampleExpenses = [
-  { date: '2024-03-01', category: 'Food', amount: 42 },
-  { date: '2024-03-08', category: 'Entertainment', amount: 80 },
-  { date: '2024-03-15', category: 'Transportation', amount: 25 },
-  { date: '2024-03-22', category: 'Food', amount: 55 },
-  { date: '2024-04-01', category: 'Food', amount: 40 },
-  { date: '2024-04-08', category: 'Entertainment', amount: 60 },
-  { date: '2024-04-15', category: 'Transportation', amount: 22 },
-  { date: '2024-04-22', category: 'Food', amount: 50 },
-];
-
-export default function Personalization({ onBack, onRewardsGenerated }) {
+export default function Personalization({ onBack }) {
   const [form, setForm] = useState({
     // Few short text inputs
     primaryGoal: '', // e.g., Reduce eating out by 20%
@@ -23,16 +11,13 @@ export default function Personalization({ onBack, onRewardsGenerated }) {
     emotionalTrigger: '', // weekends | stress | sales | boredom
     financialPainPoint: '', // tracking | impulse control | saving | investing
     identityCheck: '', // spender | saver | investor
-    rewardStyle: '', // xp/levels | badges | unlocking features | squad ranking
+    rewardStyle: '', // support circles | learning streaks | unlocking features | squad ranking
     savingsCheck: '', // yes | no | partially
     spendingLeakCategory: '', // category name
     nextMonthFocus: '', // short text or select
     categoriesToReduce: [], // multi-select
   });
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-
-  const GEMINI_API_KEY = 'REDACTED_GEMINI_API_KEY';
 
   const categories = useMemo(() => (
     ['Food', 'Entertainment', 'Transportation', 'Shopping', 'Utilities', 'Healthcare', 'Housing', 'Subscriptions']
@@ -49,44 +34,10 @@ export default function Personalization({ onBack, onRewardsGenerated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
-
-    // Prepare payload for Gemini: goals, answers, expense history
-    const payload = {
-      answers: form,
-      expenseHistory: sampleExpenses,
-      comparisonWindow: { prevMonths: 1, recentWeeks: 4 },
-      request: 'Analyze accomplishments vs previous periods, compute notable improvements (e.g., % category reductions), and assign reward points with brief rationale.'
-    };
-
-    const systemPrompt = `You are a finance coach and rewards engine. Given user's personalization answers and expense history, return strict JSON with fields: accomplishments (array of strings), rewards (array of { id, title, points, reason }). Base accomplishments on measurable improvements (e.g., 10% less on category X vs prior month). Keep total points between 100 and 1000.`;
-
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\nINPUT:\n${JSON.stringify(payload)}` }] }],
-        }),
-      });
-      if (!res.ok) throw new Error('Gemini request failed');
-      const data = await res.json();
-      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      let parsed = null;
-      try { parsed = JSON.parse(raw); } catch (_) { parsed = null; }
-
-      const rewards = parsed?.rewards && Array.isArray(parsed.rewards) ? parsed.rewards : [
-        { id: 'fallback-1', title: 'Great Start!', points: 200, reason: 'Completed personalization to unlock tailored goals.' }
-      ];
-      onRewardsGenerated?.(rewards);
-    } catch (err) {
-      setError(err.message);
-      onRewardsGenerated?.([
-        { id: 'fallback-1', title: 'Great Start!', points: 200, reason: 'Completed personalization to unlock tailored goals.' }
-      ]);
-    } finally {
-      setSubmitting(false);
-    }
+    // Non-squad score paths are disabled: personalization no longer grants points.
+    // Keep this form as a profile preference capture flow.
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    setSubmitting(false);
   };
 
   return (
@@ -154,9 +105,9 @@ export default function Personalization({ onBack, onRewardsGenerated }) {
               </div>
             </div>
             <div>
-              <label className="block text-sm text-gray-300 mb-2">Reward style</label>
+              <label className="block text-sm text-gray-300 mb-2">Community style</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-gray-300">
-                {['xp/levels', 'badges', 'unlocking features', 'squad ranking'].map((opt) => (
+                {['support circles', 'learning streaks', 'unlocking features', 'squad ranking'].map((opt) => (
                   <label key={opt} className="flex items-center gap-2">
                     <input type="radio" name="rewardstyle" checked={form.rewardStyle === opt} onChange={() => setForm({ ...form, rewardStyle: opt })} />
                     <span className="capitalize">{opt}</span>
@@ -226,14 +177,13 @@ export default function Personalization({ onBack, onRewardsGenerated }) {
             </div>
           </div>
 
-          {error && <div className="text-red-400 text-sm">{error}</div>}
           <div className="flex items-center gap-3">
             <button type="submit" disabled={submitting} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white">
-              {submitting ? 'Submitting…' : 'Submit'}
+              {submitting ? 'Saving…' : 'Save preferences'}
             </button>
-            <button type="button" onClick={() => onRewardsGenerated?.([{ id: 'quick', title: 'Quick Start', points: 100, reason: 'Started personalisation.' }])} className="px-4 py-2 rounded-lg border border-gray-700 hover:bg-gray-800">
-              Skip (Demo Reward)
-            </button>
+            <div className="text-xs text-gray-500">
+              Points are now earned only from squad/community participation.
+            </div>
           </div>
         </form>
       </div>

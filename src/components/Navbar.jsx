@@ -3,7 +3,11 @@ import { Bell } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
-const Navbar = ({ user, appView, onChangeView, onLogout }) => {
+const Navbar = ({ user, profile, appView, onChangeView, onLogout, onOpenProfile }) => {
+  const displayName = profile?.fullName || user?.displayName || user?.email?.split('@')[0] || 'User';
+  const displayUsername = profile?.username ? `@${profile.username}` : null;
+  const avatarInitial = displayName?.charAt(0)?.toUpperCase() || 'U';
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -84,24 +88,10 @@ const Navbar = ({ user, appView, onChangeView, onLogout }) => {
             </a>
             <a
               href="#"
-              onClick={(e) => { e.preventDefault(); onChangeView && onChangeView('personalization'); }}
-              className={`transition-colors ${appView === 'personalization' ? 'text-white font-medium' : 'text-gray-300 hover:text-white'}`}
-            >
-              Personalisation
-            </a>
-            <a
-              href="#"
               onClick={(e) => { e.preventDefault(); onChangeView && onChangeView('papertrading'); }}
               className={`transition-colors ${appView === 'papertrading' ? 'text-white font-medium' : 'text-gray-300 hover:text-white'}`}
             >
               PaperTrading
-            </a>
-            <a
-              href="#"
-              onClick={(e) => { e.preventDefault(); onChangeView && onChangeView('rewards'); }}
-              className={`transition-colors ${appView === 'rewards' ? 'text-white font-medium' : 'text-gray-300 hover:text-white'}`}
-            >
-              Rewards
             </a>
           </div>
 
@@ -128,7 +118,7 @@ const Navbar = ({ user, appView, onChangeView, onLogout }) => {
                   aria-haspopup="true"
                   aria-expanded={isDropdownOpen}
                 >
-                  {user.email?.charAt(0).toUpperCase() || 'U'}
+                  {avatarInitial}
                 </button>
 
                 {/* Dropdown Menu */}
@@ -141,17 +131,27 @@ const Navbar = ({ user, appView, onChangeView, onLogout }) => {
                     <div className="py-1" role="none">
                       <div className="px-4 py-3 border-b border-gray-700">
                         <p className="text-sm text-gray-400">Signed in as</p>
-                        <p className="text-sm font-medium text-white truncate">{user.email}</p>
+                        <p className="text-sm font-medium text-white truncate">{displayName}</p>
+                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                        {displayUsername && (
+                          <p className="text-xs text-blue-300 truncate">{displayUsername}</p>
+                        )}
                       </div>
                       
-                      {/* --- ADDED PROFILE LINK --- */}
-                      <a
-                        href="/profile" // Change this to your actual profile page route
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          if (onOpenProfile) {
+                            onOpenProfile();
+                          } else if (onChangeView) {
+                            onChangeView('profile');
+                          }
+                        }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 hover:text-white"
                         role="menuitem"
                       >
                         Profile
-                      </a>
+                      </button>
                       
                       <button
                         onClick={handleLogout}

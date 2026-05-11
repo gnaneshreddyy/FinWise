@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase'; // Make sure you have this file
+import { getOrCreateUserProfile, getUserProfile } from './services/userProfile';
+import { getUserTransactions, saveUserTransaction } from './services/transactions';
 import Home from './components/Home';
 import Dashboard from './components/Dashboard';
 import Navbar from './components/Navbar';
@@ -17,17 +19,30 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [appView, setAppView] = useState('dashboard'); // 'home' | 'dashboard' | 'papertrading' | 'squads' | 'profile' | 'rewards' | 'insights'
   const [selectedProfile, setSelectedProfile] = useState(null);
-  const [rewards, setRewards] = useState([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [transactionError, setTransactionError] = useState(null);
+
+  const refreshCurrentUserProfile = async () => {
+    if (!user?.uid) return null;
+    const profile = await getUserProfile(user.uid);
+    setCurrentUserProfile(profile);
+    return profile;
+  };
 
   const handleLogout = async () => {
     try {
       if (auth.currentUser) {
         await auth.signOut();
       }
-    } catch (e) {
+    } catch {
       // no-op for mock users
     } finally {
       setUser(null);
+      setCurrentUserProfile(null);
+      setSelectedProfile(null);
+      setTransactions([]);
+      setTransactionError(null);
       setAppView('dashboard');
     }
   };
@@ -39,9 +54,47 @@ function App() {
 
   // This effect runs once when the app starts and listens for auth changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       // When the auth state changes, this function is called
       setUser(currentUser); // Sets the user to the logged-in user or null
+      if (!currentUser) {
+        setCurrentUserProfile(null);
+        setSelectedProfile(null);
+        setTransactions([]);
+        setTransactionError(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const profile = await getOrCreateUserProfile(currentUser);
+        setCurrentUserProfile(profile);
+        const existingTransactions = await getUserTransactions(currentUser.uid);
+        setTransactions(existingTransactions);
+        setTransactionError(null);
+      } catch (error) {
+        console.error('Failed to load profile from database:', error);
+        // Minimal fallback to keep profile UI stable.
+        setCurrentUserProfile({
+          uid: currentUser.uid,
+          fullName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+          username: (currentUser.email?.split('@')[0] || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+          email: currentUser.email || '',
+          photoURL: currentUser.photoURL || '',
+          squadId: null,
+          squadRole: null,
+          points: { total: 0, actions: [] },
+        });
+        try {
+          const existingTransactions = await getUserTransactions(currentUser.uid);
+          setTransactions(existingTransactions);
+          setTransactionError(null);
+        } catch (transactionLoadError) {
+          console.error('Failed to load transactions from database:', transactionLoadError);
+          setTransactions([]);
+          setTransactionError('Could not load your saved transactions right now.');
+        }
+      }
       setLoading(false); // We're done loading
     });
 
@@ -59,13 +112,29 @@ function App() {
     );
   }
 
+  const handleAddTransaction = async (transaction) => {
+    if (!user?.uid) return;
+    const result = await saveUserTransaction(user.uid, transaction);
+    if (result.success && result.data) {
+      setTransactions((prev) => [result.data, ...prev]);
+      setTransactionError(null);
+      return;
+    }
+    setTransactionError(result.error || 'Could not save transaction. Please try again.');
+  };
+
   return (
     <>
       {user && (
         <Navbar
           user={user}
+          profile={currentUserProfile}
           appView={appView}
           onChangeView={setAppView}
+          onOpenProfile={() => {
+            setSelectedProfile(null);
+            setAppView('profile');
+          }}
           onLogout={handleLogout}
         />
       )}
@@ -76,31 +145,42 @@ function App() {
         appView === 'home' ? (
           <Home hideHeader={true} />
         ) : appView === 'dashboard' ? (
-          <Dashboard user={user} />
+          <Dashboard
+            user={user}
+            transactions={transactions}
+            onAddTransaction={handleAddTransaction}
+            persistenceError={transactionError}
+          />
         ) : appView === 'papertrading' ? (
           <PaperTradingApp />
         ) : appView === 'squads' ? (
           <Squads
             currentUser={user}
+            currentUserProfile={currentUserProfile}
+            onProfileUpdated={refreshCurrentUserProfile}
             onOpenProfile={(profile) => { setSelectedProfile(profile); setAppView('profile'); }}
             onGoToRewards={() => setAppView('rewards')}
           />
         ) : appView === 'profile' ? (
           <UserProfile
-            profile={selectedProfile}
-            onBack={() => setAppView('squads')}
+            profile={selectedProfile || currentUserProfile}
+            onBack={() => setAppView(selectedProfile ? 'squads' : 'dashboard')}
           />
         ) : appView === 'rewards' ? (
-          <Rewards onBack={() => setAppView('squads')} rewards={rewards} />
+          <Rewards onBack={() => setAppView('squads')} profile={currentUserProfile} />
         ) : appView === 'insights' ? (
-          <Insights />
+          <Insights transactions={transactions} />
         ) : appView === 'personalization' ? (
           <Personalization
             onBack={() => setAppView('dashboard')}
-            onRewardsGenerated={(newRewards) => { setRewards((prev) => [...newRewards, ...prev]); setAppView('rewards'); }}
           />
         ) : (
-          <Dashboard user={user} />
+          <Dashboard
+            user={user}
+            transactions={transactions}
+            onAddTransaction={handleAddTransaction}
+            persistenceError={transactionError}
+          />
         )
       )}
 

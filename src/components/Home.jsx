@@ -158,7 +158,6 @@ const FinzApp = ({ onMockLogin, hideHeader = false }) => {
               </div>
               <div className="order-1 md:order-2">
                 <div className="bg-gray-800 rounded-xl p-6 aspect-video flex items-center justify-center text-gray-500 text-xl border border-gray-700 shadow-xl">
-                  Dashboard Preview Image Here
                 </div>
               </div>
             </div>

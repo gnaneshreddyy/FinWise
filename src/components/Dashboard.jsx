@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ArrowUpRight, ArrowDownLeft, TrendingUp, ShoppingCart, Utensils, Gift, X, Calendar, DollarSign, Tag, Bell } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, TrendingUp, X, Calendar, DollarSign, Tag } from 'lucide-react';
 
-const Dashboard = () => {
+const Dashboard = ({ transactions = [], onAddTransaction, persistenceError = null }) => {
+  const DEV_MODE = true;
+
   // AddExpense Component (Nested)
   const AddExpense = ({ onClose, onSubmit }) => {
     const [amount, setAmount] = useState('');
@@ -168,65 +170,119 @@ const Dashboard = () => {
     );
   };
 
-  const dailyData = [
-    { date: 'Sep 01', income: 2000, expense: 500 },
-    { date: 'Sep 02', income: 1000, expense: 1200 },
-    { date: 'Sep 03', income: 2500, expense: 800 },
-    { date: 'Sep 04', income: 1800, expense: 2100 },
-    { date: 'Sep 05', income: 3000, expense: 1500 },
-    { date: 'Sep 06', income: 2200, expense: 1900 },
-    { date: 'Sep 07', income: 2700, expense: 1700 },
-  ];
-
-  const monthlyData = [
-    { date: 'Jul', income: 35000, expense: 24000 },
-    { date: 'Aug', income: 33000, expense: 22000 },
-    { date: 'Sep', income: 36000, expense: 25000 },
-  ];
-
-  const sixMonthData = [
-    { date: 'Apr', income: 27000, expense: 16800 },
-    { date: 'May', income: 30000, expense: 20000 },
-    { date: 'Jun', income: 32000, expense: 21000 },
-    { date: 'Jul', income: 35000, expense: 24000 },
-    { date: 'Aug', income: 33000, expense: 22000 },
-    { date: 'Sep', income: 36000, expense: 25000 },
-  ];
-  
-  const [data, setData] = useState(monthlyData);
   const [activeTimeframe, setActiveTimeframe] = useState('3M');
   const [showAddExpense, setShowAddExpense] = useState(false);
 
-  const [inflowData, setInflowData] = useState([
-    { name: 'Bank Transfer', date: 'Sep 19, 2025', amount: 10000, icon: <TrendingUp className="w-5 h-5 text-green-400" /> },
-    { name: 'Gift from Mom', date: 'Sep 18, 2025', amount: 5000, icon: <Gift className="w-5 h-5 text-purple-400" /> },
-  ]);
+  const inflowData = useMemo(
+    () => transactions.filter((transaction) => transaction.amount >= 0),
+    [transactions]
+  );
+  const outflowData = useMemo(
+    () => transactions.filter((transaction) => transaction.amount < 0),
+    [transactions]
+  );
 
-  const [outflowData, setOutflowData] = useState([
-    { name: 'Online Shopping', date: 'Sep 20, 2025', amount: -2500, icon: <ShoppingCart className="w-5 h-5 text-blue-400" /> },
-    { name: 'Restaurant', date: 'Sep 19, 2025', amount: -850, icon: <Utensils className="w-5 h-5 text-orange-400" /> },
-  ]);
+  const randomInflowSources = ['Freelance Payment', 'Salary Credit', 'Refund', 'Cashback', 'Bonus'];
+  const randomOutflowSources = ['Groceries', 'Cab Ride', 'Coffee', 'Movie', 'Online Shopping', 'Dinner'];
 
-  const handleAddTransaction = (transactionData) => {
+  const createRandomTransaction = (type) => {
+    const randomDate = new Date();
+    randomDate.setDate(randomDate.getDate() - Math.floor(Math.random() * 25));
+
+    const isInflow = type === 'inflow';
+    const randomAmount = isInflow
+      ? Math.floor(Math.random() * 9000) + 1000
+      : Math.floor(Math.random() * 4500) + 200;
+    const randomName = isInflow
+      ? randomInflowSources[Math.floor(Math.random() * randomInflowSources.length)]
+      : randomOutflowSources[Math.floor(Math.random() * randomOutflowSources.length)];
+
+    return {
+      name: randomName,
+      date: randomDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+      rawDate: randomDate.toISOString(),
+      amount: isInflow ? randomAmount : -randomAmount,
+      icon: isInflow ? <TrendingUp className="w-5 h-5 text-green-400" /> : <ArrowDownLeft className="w-5 h-5 text-red-400" />,
+    };
+  };
+
+  const addRandomTransaction = async (type) => {
+    const transaction = createRandomTransaction(type);
+    try {
+      await onAddTransaction?.(transaction);
+    } catch (error) {
+      console.error('Failed to save random transaction:', error);
+    }
+  };
+
+  const allTransactions = useMemo(
+    () => [...inflowData, ...outflowData],
+    [inflowData, outflowData]
+  );
+
+  const hasTransactions = allTransactions.length > 0;
+
+  const chartData = useMemo(() => {
+    if (!hasTransactions) return [];
+
+    const monthsToShow = activeTimeframe === '1M' ? 1 : activeTimeframe === '6M' ? 6 : 3;
+    const now = new Date();
+    const monthBuckets = [];
+
+    for (let index = monthsToShow - 1; index >= 0; index -= 1) {
+      const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+      monthBuckets.push({
+        key: `${date.getFullYear()}-${date.getMonth()}`,
+        date: date.toLocaleDateString('en-US', { month: 'short' }),
+        income: 0,
+        expense: 0,
+      });
+    }
+
+    const monthMap = new Map(monthBuckets.map((bucket) => [bucket.key, bucket]));
+
+    allTransactions.forEach((transaction) => {
+      const transactionDate = transaction.rawDate ? new Date(transaction.rawDate) : new Date(transaction.date);
+      if (Number.isNaN(transactionDate.getTime())) return;
+
+      const key = `${transactionDate.getFullYear()}-${transactionDate.getMonth()}`;
+      const monthBucket = monthMap.get(key);
+      if (!monthBucket) return;
+
+      if (transaction.amount >= 0) {
+        monthBucket.income += transaction.amount;
+      } else {
+        monthBucket.expense += Math.abs(transaction.amount);
+      }
+    });
+
+    return monthBuckets;
+  }, [activeTimeframe, allTransactions, hasTransactions]);
+
+  const handleAddTransaction = async (transactionData) => {
+    const normalizedDescription = transactionData.description || '';
     const newTransaction = {
-      name: transactionData.description || (transactionData.type === 'inflow' ? 'New Inflow' : 'New Outflow'),
+      name: normalizedDescription || (transactionData.type === 'inflow' ? 'New Inflow' : 'New Outflow'),
       date: new Date(transactionData.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+      rawDate: transactionData.date,
       amount: transactionData.type === 'inflow' ? transactionData.amount : -Math.abs(transactionData.amount),
+      description: normalizedDescription,
+      category: transactionData.category || 'other',
       icon: transactionData.type === 'inflow' ? <TrendingUp className="w-5 h-5 text-green-400" /> : <ArrowDownLeft className="w-5 h-5 text-red-400" />,
     };
 
-    if (transactionData.type === 'inflow') {
-      setInflowData((prevData) => [newTransaction, ...prevData]);
-    } else {
-      setOutflowData((prevData) => [newTransaction, ...prevData]);
+    try {
+      await onAddTransaction?.(newTransaction);
+    } catch (error) {
+      console.error('Failed to save transaction:', error);
+      return;
     }
 
     setShowAddExpense(false);
   };
 
-  const handleTimeframeChange = (timeframe, dataset) => {
+  const handleTimeframeChange = (timeframe) => {
     setActiveTimeframe(timeframe);
-    setData(dataset);
   };
 
   return (
@@ -239,6 +295,11 @@ const Dashboard = () => {
       )}
 
       <main className="max-w-7xl mx-auto px-4 py-8">
+        {persistenceError ? (
+          <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            {persistenceError}
+          </div>
+        ) : null}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Good Morning, Nishant</h1>
           <p className="text-gray-400">Sunday, September 21, 2025</p>
@@ -255,7 +316,8 @@ const Dashboard = () => {
                 </div>
                 <div className="flex space-x-2 bg-gray-800 p-1 rounded-lg">
                   <button
-                    onClick={() => handleTimeframeChange('1M', dailyData)}
+                    onClick={() => handleTimeframeChange('1M')}
+                    disabled={!hasTransactions}
                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                       activeTimeframe === '1M' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
                     }`}
@@ -263,7 +325,8 @@ const Dashboard = () => {
                     1M
                   </button>
                   <button
-                    onClick={() => handleTimeframeChange('3M', monthlyData)}
+                    onClick={() => handleTimeframeChange('3M')}
+                    disabled={!hasTransactions}
                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                       activeTimeframe === '3M' ? 'bg-blue-500/20 text-blue-300' : 'text-gray-400 hover:text-white'
                     }`}
@@ -271,7 +334,8 @@ const Dashboard = () => {
                     3M
                   </button>
                   <button
-                    onClick={() => handleTimeframeChange('6M', sixMonthData)}
+                    onClick={() => handleTimeframeChange('6M')}
+                    disabled={!hasTransactions}
                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                       activeTimeframe === '6M' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
                     }`}
@@ -279,36 +343,59 @@ const Dashboard = () => {
                     6M
                   </button>
                 </div>
+                {DEV_MODE && (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => addRandomTransaction('inflow')}
+                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-colors"
+                    >
+                      + Random Inflow
+                    </button>
+                    <button
+                      onClick={() => addRandomTransaction('outflow')}
+                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors"
+                    >
+                      + Random Outflow
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="h-96 w-full">
-                 <ResponsiveContainer width="100%" height="100%">
-                   <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                     <defs>
-                       <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                         <stop offset="5%" stopColor="#10B981" stopOpacity={0.4}/>
-                         <stop offset="95%" stopColor="#10B981" stopOpacity={0.05}/>
-                       </linearGradient>
-                       <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                         <stop offset="5%" stopColor="#EF4444" stopOpacity={0.4}/>
-                         <stop offset="95%" stopColor="#EF4444" stopOpacity={0.05}/>
-                       </linearGradient>
-                     </defs>
-                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                     <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
-                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} tickFormatter={(value) => `₹${value/1000}k`} />
-                     <Tooltip 
-                       contentStyle={{ 
-                         backgroundColor: '#1F2937', 
-                         border: '1px solid #374151',
-                         borderRadius: '8px',
-                       }}
-                       itemStyle={{ color: '#E5E7EB' }}
-                       formatter={(value) => `₹${value.toLocaleString()}`}
-                     />
-                     <Area type="monotone" dataKey="income" stroke="#10B981" fill="url(#incomeGradient)" strokeWidth={2} />
-                     <Area type="monotone" dataKey="expense" stroke="#EF4444" fill="url(#expenseGradient)" strokeWidth={2} />
-                   </AreaChart>
-                 </ResponsiveContainer>
+                {hasTransactions ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0.05}/>
+                        </linearGradient>
+                        <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#EF4444" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#EF4444" stopOpacity={0.05}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} tickFormatter={(value) => `₹${value/1000}k`} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1F2937',
+                          border: '1px solid #374151',
+                          borderRadius: '8px',
+                        }}
+                        itemStyle={{ color: '#E5E7EB' }}
+                        formatter={(value) => `₹${value.toLocaleString()}`}
+                      />
+                      <Area type="monotone" dataKey="income" stroke="#10B981" fill="url(#incomeGradient)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="expense" stroke="#EF4444" fill="url(#expenseGradient)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full w-full rounded-lg border border-dashed border-gray-700 bg-gray-950/40 flex flex-col items-center justify-center text-center px-6">
+                    <p className="text-xl font-semibold text-white mb-2">No transactions yet</p>
+                    <p className="text-gray-400 max-w-md">Add your first transaction to generate your expense graph.</p>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -317,23 +404,37 @@ const Dashboard = () => {
               <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-white">Latest Inflow</h3>
-                  <button className="text-blue-400 text-sm font-medium hover:text-blue-300">View More</button>
+                  <div className="flex items-center gap-2">
+                    {DEV_MODE && (
+                      <button
+                        onClick={() => addRandomTransaction('inflow')}
+                        className="text-green-400 text-sm font-medium hover:text-green-300"
+                      >
+                        + Add
+                      </button>
+                    )}
+                    <button className="text-blue-400 text-sm font-medium hover:text-blue-300">View More</button>
+                  </div>
                 </div>
                 <div className="space-y-4">
-                  {inflowData.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
-                          {item.icon}
+                  {inflowData.length === 0 ? (
+                    <p className="text-sm text-gray-500">No inflow transactions yet.</p>
+                  ) : (
+                    inflowData.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5 text-green-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-white">{item.name}</p>
+                            <p className="text-sm text-gray-400">{item.date}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-white">{item.name}</p>
-                          <p className="text-sm text-gray-400">{item.date}</p>
-                        </div>
+                        <span className="text-green-400 font-semibold">+₹{item.amount.toLocaleString()}</span>
                       </div>
-                      <span className="text-green-400 font-semibold">+₹{item.amount.toLocaleString()}</span>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
               
@@ -341,23 +442,37 @@ const Dashboard = () => {
               <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-white">Latest Outflow</h3>
-                  <button className="text-blue-400 text-sm font-medium hover:text-blue-300">View More</button>
+                  <div className="flex items-center gap-2">
+                    {DEV_MODE && (
+                      <button
+                        onClick={() => addRandomTransaction('outflow')}
+                        className="text-red-400 text-sm font-medium hover:text-red-300"
+                      >
+                        + Add
+                      </button>
+                    )}
+                    <button className="text-blue-400 text-sm font-medium hover:text-blue-300">View More</button>
+                  </div>
                 </div>
                 <div className="space-y-4">
-                  {outflowData.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center">
-                          {item.icon}
+                  {outflowData.length === 0 ? (
+                    <p className="text-sm text-gray-500">No outflow transactions yet.</p>
+                  ) : (
+                    outflowData.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center">
+                            <ArrowDownLeft className="w-5 h-5 text-red-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-white">{item.name}</p>
+                            <p className="text-sm text-gray-400">{item.date}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-white">{item.name}</p>
-                          <p className="text-sm text-gray-400">{item.date}</p>
-                        </div>
+                        <span className="text-red-400 font-semibold">-₹{Math.abs(item.amount).toLocaleString()}</span>
                       </div>
-                      <span className="text-red-400 font-semibold">-₹{Math.abs(item.amount).toLocaleString()}</span>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -367,13 +482,13 @@ const Dashboard = () => {
           <aside className="lg:col-span-2 space-y-6">
             <div
               onClick={() => setShowAddExpense(true)}
-              className="bg-gray-900 rounded-lg p-6 border-2 border-dashed border-gray-700 hover:border-blue-500 transition-colors cursor-pointer group flex flex-col items-center justify-center text-center h-[525px]"
+              className={`bg-gray-900 rounded-lg p-6 border-2 border-dashed border-gray-700 hover:border-blue-500 transition-colors cursor-pointer group flex flex-col items-center justify-center text-center ${hasTransactions ? 'h-[525px]' : 'h-[620px]'}`}
             >
               <div className="w-16 h-16 bg-blue-500/10 group-hover:bg-blue-500/20 rounded-full flex items-center justify-center mb-3 transition-colors">
                 <span className="text-3xl text-blue-400 font-light">+</span>
               </div>
-              <h3 className="text-xl font-medium text-gray-300 group-hover:text-blue-400 transition-colors">Add Transaction</h3>
-              <p className="text-sm text-gray-500 mt-1">Track your spending</p>
+              <h3 className="text-xl font-medium text-gray-300 group-hover:text-blue-400 transition-colors">{hasTransactions ? 'Add Transaction' : 'Add your first transaction'}</h3>
+              <p className="text-sm text-gray-500 mt-1">{hasTransactions ? 'Track your spending' : 'Start tracking to unlock your expense graph'}</p>
             </div>
           </aside>
         </div>

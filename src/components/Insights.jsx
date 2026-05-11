@@ -4,102 +4,9 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from 'recharts';
 
-// Sample expense data (replace with actual source if needed)
-const expenseData = [
-  { date: '2024-01-01', category: 'Housing', amount: 1200.00 },
-  { date: '2024-01-02', category: 'Food', amount: 50.00 },
-  { date: '2024-01-03', category: 'Transportation', amount: 25.00 },
-  { date: '2024-01-04', category: 'Healthcare', amount: 150.00 },
-  { date: '2024-01-05', category: 'Entertainment', amount: 75.00 },
-  { date: '2024-01-06', category: 'Shopping', amount: 200.00 },
-  { date: '2024-01-07', category: 'Utilities', amount: 100.00 },
-  { date: '2024-01-08', category: 'Food', amount: 45.00 },
-  { date: '2024-01-09', category: 'Transportation', amount: 30.00 },
-  { date: '2024-01-10', category: 'Healthcare', amount: 80.00 },
-  { date: '2024-01-11', category: 'Entertainment', amount: 120.00 },
-  { date: '2024-01-12', category: 'Shopping', amount: 90.00 },
-  { date: '2024-01-13', category: 'Food', amount: 60.00 },
-  { date: '2024-01-14', category: 'Transportation', amount: 40.00 },
-  { date: '2024-01-15', category: 'Housing', amount: 300.00 },
-  { date: '2024-01-16', category: 'Utilities', amount: 85.00 },
-  { date: '2024-01-17', category: 'Food', amount: 55.00 },
-  { date: '2024-01-18', category: 'Entertainment', amount: 95.00 },
-  { date: '2024-01-19', category: 'Shopping', amount: 140.00 },
-  { date: '2024-01-20', category: 'Transportation', amount: 35.00 },
-  { date: '2024-01-21', category: 'Food', amount: 65.00 },
-  { date: '2024-01-22', category: 'Healthcare', amount: 200.00 },
-  { date: '2024-01-23', category: 'Entertainment', amount: 110.00 },
-  { date: '2024-01-24', category: 'Shopping', amount: 80.00 },
-  { date: '2024-01-25', category: 'Utilities', amount: 70.00 },
-  { date: '2024-01-26', category: 'Food', amount: 48.00 },
-  { date: '2024-01-27', category: 'Transportation', amount: 28.00 },
-  { date: '2024-01-28', category: 'Entertainment', amount: 130.00 },
-  { date: '2024-01-29', category: 'Shopping', amount: 160.00 },
-  { date: '2024-01-30', category: 'Food', amount: 52.00 },
-  { date: '2024-01-31', category: 'Healthcare', amount: 90.00 },
-  { date: '2024-02-01', category: 'Housing', amount: 1200.00 },
-  { date: '2024-02-02', category: 'Transportation', amount: 42.00 },
-  { date: '2024-02-03', category: 'Food', amount: 58.00 },
-  { date: '2024-02-04', category: 'Entertainment', amount: 85.00 },
-  { date: '2024-02-05', category: 'Shopping', amount: 120.00 },
-  { date: '2024-02-06', category: 'Utilities', amount: 95.00 },
-  { date: '2024-02-07', category: 'Food', amount: 62.00 },
-  { date: '2024-02-08', category: 'Transportation', amount: 38.00 },
-  { date: '2024-02-09', category: 'Healthcare', amount: 175.00 },
-  { date: '2024-02-10', category: 'Entertainment', amount: 105.00 },
-  { date: '2024-02-11', category: 'Shopping', amount: 75.00 },
-  { date: '2024-02-12', category: 'Food', amount: 44.00 },
-  { date: '2024-02-13', category: 'Transportation', amount: 32.00 },
-  { date: '2024-02-14', category: 'Entertainment', amount: 150.00 },
-  { date: '2024-02-15', category: 'Shopping', amount: 200.00 },
-  { date: '2024-02-16', category: 'Utilities', amount: 88.00 },
-  { date: '2024-02-17', category: 'Food', amount: 56.00 },
-  { date: '2024-02-18', category: 'Transportation', amount: 45.00 },
-  { date: '2024-02-19', category: 'Healthcare', amount: 120.00 },
-  { date: '2024-02-20', category: 'Entertainment', amount: 90.00 },
-  { date: '2024-02-21', category: 'Shopping', amount: 110.00 },
-  { date: '2024-02-22', category: 'Food', amount: 68.00 },
-  { date: '2024-02-23', category: 'Transportation', amount: 36.00 },
-  { date: '2024-02-24', category: 'Entertainment', amount: 125.00 },
-  { date: '2024-02-25', category: 'Shopping', amount: 95.00 },
-  { date: '2024-02-26', category: 'Utilities', amount: 92.00 },
-  { date: '2024-02-27', category: 'Food', amount: 54.00 },
-  { date: '2024-02-28', category: 'Transportation', amount: 41.00 },
-  { date: '2024-02-29', category: 'Healthcare', amount: 160.00 },
-  { date: '2024-03-01', category: 'Housing', amount: 1200.00 },
-  { date: '2024-03-02', category: 'Entertainment', amount: 100.00 },
-  { date: '2024-03-03', category: 'Shopping', amount: 85.00 },
-  { date: '2024-03-04', category: 'Food', amount: 59.00 },
-  { date: '2024-03-05', category: 'Transportation', amount: 33.00 },
-  { date: '2024-03-06', category: 'Utilities', amount: 105.00 },
-  { date: '2024-03-07', category: 'Food', amount: 47.00 },
-  { date: '2024-03-08', category: 'Entertainment', amount: 115.00 },
-  { date: '2024-03-09', category: 'Shopping', amount: 140.00 },
-  { date: '2024-03-10', category: 'Transportation', amount: 39.00 },
-  { date: '2024-03-11', category: 'Healthcare', amount: 185.00 },
-  { date: '2024-03-12', category: 'Food', amount: 61.00 },
-  { date: '2024-03-13', category: 'Entertainment', amount: 80.00 },
-  { date: '2024-03-14', category: 'Shopping', amount: 125.00 },
-  { date: '2024-03-15', category: 'Transportation', amount: 44.00 },
-  { date: '2024-03-16', category: 'Utilities', amount: 78.00 },
-  { date: '2024-03-17', category: 'Food', amount: 53.00 },
-  { date: '2024-03-18', category: 'Entertainment', amount: 135.00 },
-  { date: '2024-03-19', category: 'Shopping', amount: 95.00 },
-  { date: '2024-03-20', category: 'Transportation', amount: 37.00 },
-  { date: '2024-03-21', category: 'Healthcare', amount: 145.00 },
-  { date: '2024-03-22', category: 'Food', amount: 66.00 },
-  { date: '2024-03-23', category: 'Entertainment', amount: 110.00 },
-  { date: '2024-03-24', category: 'Shopping', amount: 105.00 },
-  { date: '2024-03-25', category: 'Transportation', amount: 29.00 },
-  { date: '2024-03-26', category: 'Utilities', amount: 102.00 },
-  { date: '2024-03-27', category: 'Food', amount: 57.00 },
-  { date: '2024-03-28', category: 'Entertainment', amount: 88.00 },
-  { date: '2024-03-29', category: 'Shopping', amount: 115.00 },
-  { date: '2024-03-30', category: 'Transportation', amount: 43.00 },
-  { date: '2024-03-31', category: 'Healthcare', amount: 165.00 }
-];
-
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
+const CHART_STROKE = '#374151';
+const AXIS_TICK = { fill: '#9CA3AF', fontSize: 12 };
 
 function aggregateByCategory(rows) {
   const map = new Map();
@@ -118,13 +25,25 @@ function aggregateByMonth(rows) {
   return Array.from(map, ([month, total]) => ({ month, total })).sort((a, b) => a.month.localeCompare(b.month));
 }
 
-export default function Insights() {
-  const [geminiResponse, setGeminiResponse] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function Insights({ transactions = [] }) {
+  const [aiInsightsResponse, setAiInsightsResponse] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
-  // TEMP: Direct key per user request (do not store in .env for now)
-  const GEMINI_API_KEY = 'REDACTED_GEMINI_API_KEY';
+  const expenseData = useMemo(
+    () =>
+      transactions
+        .filter((transaction) => transaction.amount < 0)
+        .map((transaction) => ({
+          date: transaction.rawDate || transaction.date,
+          category: transaction.name || 'Other',
+          amount: Math.abs(transaction.amount),
+        })),
+    [transactions]
+  );
+
+  const hasEnoughInsightsData = expenseData.length > 4;
 
   const fallback = useMemo(() => {
     const byCategory = aggregateByCategory(expenseData);
@@ -183,37 +102,37 @@ export default function Insights() {
         },
       ],
     };
-  }, []);
+  }, [expenseData]);
 
   useEffect(() => {
+    if (!hasEnoughInsightsData) {
+      setLoading(false);
+      setError(null);
+      setAiInsightsResponse(null);
+      return;
+    }
+
     const fetchInsights = async () => {
-      const apiKey = GEMINI_API_KEY;
+      setLoading(true);
+      setError(null);
       try {
-        const prompt = `You are an expert data visualization assistant specialized in personal finance insights. Given the dataset, produce JSON as specified. Dataset: ${JSON.stringify(expenseData)}`;
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+        const response = await fetch(`${apiBaseUrl}/insights`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          body: JSON.stringify({ expenseData }),
         });
         if (!response.ok) throw new Error('API request failed');
         const data = await response.json();
-        const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        let parsed = null;
-        try {
-          parsed = JSON.parse(raw);
-        } catch (e) {
-          parsed = null;
-        }
-        setGeminiResponse(parsed || fallback);
+        setAiInsightsResponse(data || fallback);
       } catch (err) {
         setError(err.message);
-        setGeminiResponse(fallback);
+        setAiInsightsResponse(fallback);
       } finally {
         setLoading(false);
       }
     };
     fetchInsights();
-  }, [fallback]);
+  }, [apiBaseUrl, fallback, hasEnoughInsightsData, expenseData]);
 
   const renderChart = (chartConfig) => {
     const data = chartConfig.aggregatedData || expenseData;
@@ -222,12 +141,15 @@ export default function Insights() {
         return (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={chartConfig.xField} />
-              <YAxis />
-              <Tooltip />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_STROKE} />
+              <XAxis dataKey={chartConfig.xField} tick={AXIS_TICK} />
+              <YAxis tick={AXIS_TICK} />
+              <Tooltip
+                cursor={{ fill: 'rgba(255,255,255,0.06)' }}
+                contentStyle={{ backgroundColor: '#0B1220', border: '1px solid #1F2937', borderRadius: '0.75rem' }}
+              />
               <Legend />
-              <Bar dataKey={chartConfig.dataKey} fill="#8884d8" {...(chartConfig.additionalProps || {})} />
+              <Bar dataKey={chartConfig.dataKey} fill="#60A5FA" radius={[6, 6, 0, 0]} {...(chartConfig.additionalProps || {})} />
             </BarChart>
           </ResponsiveContainer>
         );
@@ -235,12 +157,15 @@ export default function Insights() {
         return (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={chartConfig.xField} />
-              <YAxis />
-              <Tooltip />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_STROKE} />
+              <XAxis dataKey={chartConfig.xField} tick={AXIS_TICK} />
+              <YAxis tick={AXIS_TICK} />
+              <Tooltip
+                cursor={{ stroke: '#374151' }}
+                contentStyle={{ backgroundColor: '#0B1220', border: '1px solid #1F2937', borderRadius: '0.75rem' }}
+              />
               <Legend />
-              <Line type="monotone" dataKey={chartConfig.dataKey} stroke="#8884d8" {...(chartConfig.additionalProps || {})} />
+              <Line type="monotone" dataKey={chartConfig.dataKey} stroke="#60A5FA" strokeWidth={3} dot={{ r: 2 }} {...(chartConfig.additionalProps || {})} />
             </LineChart>
           </ResponsiveContainer>
         );
@@ -262,7 +187,9 @@ export default function Insights() {
                   <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#0B1220', border: '1px solid #1F2937', borderRadius: '0.75rem' }}
+              />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
@@ -271,12 +198,15 @@ export default function Insights() {
         return (
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={chartConfig.xField} />
-              <YAxis />
-              <Tooltip />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_STROKE} />
+              <XAxis dataKey={chartConfig.xField} tick={AXIS_TICK} />
+              <YAxis tick={AXIS_TICK} />
+              <Tooltip
+                cursor={{ stroke: '#374151' }}
+                contentStyle={{ backgroundColor: '#0B1220', border: '1px solid #1F2937', borderRadius: '0.75rem' }}
+              />
               <Legend />
-              <Area type="monotone" dataKey={chartConfig.dataKey} stroke="#8884d8" fill="#8884d8" {...(chartConfig.additionalProps || {})} />
+              <Area type="monotone" dataKey={chartConfig.dataKey} stroke="#60A5FA" fill="#1D4ED8" fillOpacity={0.45} {...(chartConfig.additionalProps || {})} />
             </AreaChart>
           </ResponsiveContainer>
         );
@@ -285,32 +215,109 @@ export default function Insights() {
     }
   };
 
-  if (loading) return <div className="text-gray-300 p-6">Loading insights...</div>;
-  if (!geminiResponse) return <div className="text-gray-300 p-6">No insights available.</div>;
+  const renderStateCard = (title, description, tone = 'default') => {
+    const toneClasses =
+      tone === 'error'
+        ? 'border-red-500/30 bg-red-500/10'
+        : tone === 'loading'
+          ? 'border-blue-500/30 bg-blue-500/10'
+          : 'border-gray-700/70 bg-gray-900/80';
 
-  const { insights, charts } = geminiResponse;
+    return (
+      <div className={`rounded-2xl border ${toneClasses} p-6`}>
+        <h2 className="text-xl font-semibold text-white">{title}</h2>
+        <p className="mt-2 text-sm leading-6 text-gray-300">{description}</p>
+      </div>
+    );
+  };
+
+  if (!hasEnoughInsightsData) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-gray-200">
+        <div className="mx-auto max-w-6xl px-4 py-8">
+          <header className="mb-6">
+            <h1 className="text-3xl font-bold text-white">Expense Insights</h1>
+            <p className="mt-2 text-sm text-gray-400">AI-powered patterns from your spending history.</p>
+          </header>
+          {renderStateCard(
+            'Not enough data yet',
+            'Add at least 5 expense transactions to unlock personalized insights and chart recommendations.',
+            'default'
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-gray-200">
+        <div className="mx-auto max-w-6xl px-4 py-8">
+          <header className="mb-6">
+            <h1 className="text-3xl font-bold text-white">Expense Insights</h1>
+            <p className="mt-2 text-sm text-gray-400">AI-powered patterns from your spending history.</p>
+          </header>
+          {renderStateCard('Building your insights', 'Analyzing recent transactions and preparing chart suggestions.', 'loading')}
+        </div>
+      </div>
+    );
+  }
+
+  if (!aiInsightsResponse) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-gray-200">
+        <div className="mx-auto max-w-6xl px-4 py-8">
+          <header className="mb-6">
+            <h1 className="text-3xl font-bold text-white">Expense Insights</h1>
+            <p className="mt-2 text-sm text-gray-400">AI-powered patterns from your spending history.</p>
+          </header>
+          {renderStateCard('No insights available', 'Try again after adding more transactions or refreshing the page.', 'error')}
+        </div>
+      </div>
+    );
+  }
+
+  const { insights, charts } = aiInsightsResponse;
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-200">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-white mb-4">Expense Insights</h1>
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        <header className="mb-6">
+          <h1 className="text-3xl font-bold text-white">Expense Insights</h1>
+          <p className="mt-2 text-sm text-gray-400">AI-powered patterns from your spending history.</p>
+          {error ? (
+            <p className="mt-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm text-amber-200">
+              Live AI insights had an issue. Showing fallback analysis instead.
+            </p>
+          ) : null}
+        </header>
+
         {insights?.length ? (
-          <ul className="list-disc list-inside mb-8 text-gray-300">
+          <section className="mb-8 rounded-2xl border border-gray-800 bg-gray-900/70 p-5">
+            <h2 className="mb-3 text-lg font-semibold text-white">Key Takeaways</h2>
+            <ul className="space-y-2 text-sm leading-6 text-gray-300">
             {insights.map((insight, idx) => (
-              <li key={idx}>{insight}</li>
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-blue-400" />
+                  <span>{insight}</span>
+                </li>
             ))}
-          </ul>
+            </ul>
+          </section>
         ) : null}
-        <h2 className="text-2xl font-semibold text-white mb-4">Recommended Charts</h2>
-        <div className="space-y-8">
+
+        <section>
+          <h2 className="mb-4 text-2xl font-semibold text-white">Recommended Charts</h2>
+          <div className="space-y-6">
           {charts?.map((chart, idx) => (
-            <div key={idx} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <h3 className="text-lg font-medium text-white mb-1">{chart.title}</h3>
-              <p className="text-gray-400 mb-4">{chart.description}</p>
+              <div key={idx} className="rounded-2xl border border-gray-800 bg-gray-900/80 p-5 shadow-lg shadow-black/20">
+                <h3 className="mb-1 text-lg font-semibold text-white">{chart.title}</h3>
+                <p className="mb-4 text-sm leading-6 text-gray-400">{chart.description}</p>
               {renderChart(chart)}
             </div>
           ))}
-        </div>
+          </div>
+        </section>
       </div>
     </div>
   );
