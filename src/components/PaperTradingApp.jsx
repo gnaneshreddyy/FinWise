@@ -8,9 +8,6 @@ const PaperTradingApp = () => {
   const [indianExchange, setIndianExchange] = useState('NSE');
   const [marketData, setMarketData] = useState(null);
   const [stocks, setStocks] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState('connected');
   const [chartData, setChartData] = useState([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState('1D');
   const [selectedStock, setSelectedStock] = useState(null);
@@ -39,7 +36,7 @@ const PaperTradingApp = () => {
   });
 
   // API configuration
-  const FINNHUB_API_KEY = 'REDACTED_FINNHUB_API_KEY';
+  const FINNHUB_API_KEY = import.meta.env.VITE_FINNHUB_API_KEY || '';
 
   // Stock symbols
   const stockSymbols = {
@@ -265,8 +262,6 @@ const PaperTradingApp = () => {
     setStocks(mockStocks);
     setMarketData(mockIndex);
     setChartData(generateChartData(mockIndex.value));
-    setLastUpdated(new Date());
-    setIsLoading(false);
   }, [selectedMarket, indianExchange]);
 
   // Update chart data when timeframe changes

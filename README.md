@@ -34,6 +34,7 @@ Create `.env` in project root (for Vite app):
 
 ```
 VITE_API_BASE_URL=http://localhost:5000
+VITE_FINNHUB_API_KEY=your_finnhub_api_key_here
 ```
 
 ### Endpoints used
