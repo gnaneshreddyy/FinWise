@@ -1,9 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ArrowUpRight, ArrowDownLeft, TrendingUp, X, Calendar, DollarSign, Tag } from 'lucide-react';
+import { formatCurrency, getCurrentBalance } from '../services/financeSummary';
 
-const Dashboard = ({ transactions = [], onAddTransaction, persistenceError = null }) => {
+const Dashboard = ({ user = null, profile = null, transactions = [], onAddTransaction, persistenceError = null }) => {
   const DEV_MODE = true;
+  const displayName = profile?.fullName || user?.displayName || user?.email?.split('@')?.[0] || 'User';
+  const todayLabel = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const currentBalance = useMemo(() => getCurrentBalance(transactions), [transactions]);
 
   // AddExpense Component (Nested)
   const AddExpense = ({ onClose, onSubmit }) => {
@@ -301,8 +310,8 @@ const Dashboard = ({ transactions = [], onAddTransaction, persistenceError = nul
           </div>
         ) : null}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Good Morning, Nishant</h1>
-          <p className="text-gray-400">Sunday, September 21, 2025</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Good Morning, {displayName}</h1>
+          <p className="text-gray-400">{todayLabel}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
@@ -312,7 +321,9 @@ const Dashboard = ({ transactions = [], onAddTransaction, persistenceError = nul
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <p className="text-sm text-gray-400 mb-1">TOTAL BALANCE</p>
-                  <h2 className="text-4xl font-bold text-white">₹3,49,904</h2>
+                  <h2 className="text-4xl font-bold text-white">
+                    {currentBalance === null ? 'No balance yet' : formatCurrency(currentBalance)}
+                  </h2>
                 </div>
                 <div className="flex space-x-2 bg-gray-800 p-1 rounded-lg">
                   <button
@@ -376,7 +387,7 @@ const Dashboard = ({ transactions = [], onAddTransaction, persistenceError = nul
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                       <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} tickFormatter={(value) => `₹${value/1000}k`} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} tickFormatter={(value) => `${formatCurrency(value / 1000)}k`} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: '#1F2937',
@@ -384,7 +395,7 @@ const Dashboard = ({ transactions = [], onAddTransaction, persistenceError = nul
                           borderRadius: '8px',
                         }}
                         itemStyle={{ color: '#E5E7EB' }}
-                        formatter={(value) => `₹${value.toLocaleString()}`}
+                        formatter={(value) => formatCurrency(value)}
                       />
                       <Area type="monotone" dataKey="income" stroke="#10B981" fill="url(#incomeGradient)" strokeWidth={2} />
                       <Area type="monotone" dataKey="expense" stroke="#EF4444" fill="url(#expenseGradient)" strokeWidth={2} />
@@ -431,7 +442,7 @@ const Dashboard = ({ transactions = [], onAddTransaction, persistenceError = nul
                             <p className="text-sm text-gray-400">{item.date}</p>
                           </div>
                         </div>
-                        <span className="text-green-400 font-semibold">+₹{item.amount.toLocaleString()}</span>
+                        <span className="text-green-400 font-semibold">+{formatCurrency(item.amount)}</span>
                       </div>
                     ))
                   )}
@@ -469,7 +480,7 @@ const Dashboard = ({ transactions = [], onAddTransaction, persistenceError = nul
                             <p className="text-sm text-gray-400">{item.date}</p>
                           </div>
                         </div>
-                        <span className="text-red-400 font-semibold">-₹{Math.abs(item.amount).toLocaleString()}</span>
+                        <span className="text-red-400 font-semibold">-{formatCurrency(Math.abs(item.amount))}</span>
                       </div>
                     ))
                   )}

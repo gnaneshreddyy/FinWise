@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, X, Minimize2 } from 'lucide-react';
+import { requestChatReply } from '../services/backendApi';
+import { buildFinancialContext } from '../services/financialContext';
 
-const Chatbot = () => {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const Chatbot = ({ user = null, profile = null, transactions = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { text: "Hi! I'm your AI assistant. How can I help you today?", isBot: true, timestamp: new Date() }
@@ -63,19 +64,8 @@ const Chatbot = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: inputValue }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const financialContext = buildFinancialContext({ user, profile, transactions });
+      const data = await requestChatReply(inputValue, financialContext);
       
       const botMessage = {
         text: data.reply || "I'm sorry, I couldn't generate a response.",

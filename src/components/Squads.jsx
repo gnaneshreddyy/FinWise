@@ -18,12 +18,12 @@ export default function Squads({ currentUser, currentUserProfile, onOpenProfile,
 
   const profilePoints = Number(currentUserProfile?.points?.total || 0);
 
-  const loadSquad = async () => {
-    if (!currentUserProfile) {
+  const loadSquad = async (profile = currentUserProfile) => {
+    if (!profile) {
       setCurrentSquad(null);
       return;
     }
-    const squad = await getSquadForUser(currentUserProfile);
+    const squad = await getSquadForUser(profile);
     setCurrentSquad(squad);
   };
 
@@ -43,8 +43,8 @@ export default function Squads({ currentUser, currentUserProfile, onOpenProfile,
     setStatus('');
     try {
       const result = await runner();
-      await onProfileUpdated?.();
-      await loadSquad();
+      const updatedProfile = await onProfileUpdated?.();
+      await loadSquad(updatedProfile || currentUserProfile);
       setStatus(result || 'Action completed.');
     } catch (err) {
       setError(err.message || 'Unable to complete this action.');
@@ -200,6 +200,5 @@ export default function Squads({ currentUser, currentUserProfile, onOpenProfile,
     </div>
   );
 }
-
 
 

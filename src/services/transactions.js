@@ -1,5 +1,5 @@
 import { addDoc, collection, getDocs, query } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 
 function normalizeDateTime(rawDateValue) {
   const parsed = new Date(rawDateValue);

@@ -9,7 +9,7 @@ import {
   where,
   collection,
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 
 // Single scoring model: points are awarded only for squad/community participation actions.
 export const SQUAD_POINT_ACTIONS = Object.freeze({

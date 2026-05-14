@@ -3,6 +3,7 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from 'recharts';
+import { requestExpenseInsights } from '../services/backendApi';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 const CHART_STROKE = '#374151';
@@ -29,7 +30,6 @@ export default function Insights({ transactions = [] }) {
   const [aiInsightsResponse, setAiInsightsResponse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
   const expenseData = useMemo(
     () =>
@@ -116,13 +116,7 @@ export default function Insights({ transactions = [] }) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${apiBaseUrl}/insights`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ expenseData }),
-        });
-        if (!response.ok) throw new Error('API request failed');
-        const data = await response.json();
+        const data = await requestExpenseInsights(expenseData);
         setAiInsightsResponse(data || fallback);
       } catch (err) {
         setError(err.message);
@@ -132,7 +126,7 @@ export default function Insights({ transactions = [] }) {
       }
     };
     fetchInsights();
-  }, [apiBaseUrl, fallback, hasEnoughInsightsData, expenseData]);
+  }, [fallback, hasEnoughInsightsData, expenseData]);
 
   const renderChart = (chartConfig) => {
     const data = chartConfig.aggregatedData || expenseData;
@@ -322,5 +316,4 @@ export default function Insights({ transactions = [] }) {
     </div>
   );
 }
-
 

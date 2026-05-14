@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Menu, X, ChevronRight, TrendingUp, Shield, Zap, Eye, EyeOff, ArrowLeft, Receipt } from 'lucide-react';
-import Dashboard from './Dashboard';
-
-// STEP 1: ADD FIREBASE IMPORTS
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
+import { loginWithEmail, loginWithGoogle, signupWithEmail } from '../services/authService';
 
 
-const FinzApp = ({ onMockLogin, hideHeader = false }) => {
+const FinzApp = ({ hideHeader = false, onNavigate }) => {
   const [currentView, setCurrentView] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [authError, setAuthError] = useState('');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,38 +20,50 @@ const FinzApp = ({ onMockLogin, hideHeader = false }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Logging in...", loginForm);
-    if (onMockLogin) {
-      onMockLogin();
-      return;
-    }
-    // Fall back to old local view switch if no handler provided
-    setCurrentView('dashboard');
-  };
+    setAuthError('');
 
-  const handleSignup = (e) => {
-    e.preventDefault();
-    console.log("Signing up...", signupForm);
-    if (onMockLogin) {
-      onMockLogin();
-      return;
-    }
-    // Fall back to old local view switch if no handler provided
-    setCurrentView('dashboard');
-  };
-
-  // STEP 2: CREATE THE GOOGLE SIGN-IN HANDLER
-  const handleGoogleSignIn = async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      await loginWithEmail(loginForm.email, loginForm.password);
+    } catch (error) {
+      console.error("Email sign-in error:", error);
+      setAuthError(error.message || 'Could not sign in. Please check your email and password.');
+    }
+  };
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+
+    if (signupForm.password !== signupForm.confirmPassword) {
+      setAuthError('Passwords do not match.');
+      return;
+    }
+
+    try {
+      await signupWithEmail({
+        name: signupForm.name,
+        email: signupForm.email,
+        password: signupForm.password,
+      });
+    } catch (error) {
+      console.error("Email signup error:", error);
+      setAuthError(error.message || 'Could not create your account. Please try again.');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setAuthError('');
+    try {
+      const result = await loginWithGoogle();
       const user = result.user;
       console.log("Successfully signed in with Google:", user.displayName);
       // The onAuthStateChanged listener in App.jsx will automatically handle
       // switching the view to the dashboard upon successful login.
     } catch (error) {
       console.error("Google sign-in error:", error.message);
+      setAuthError(error.message || 'Could not sign in with Google.');
     }
   };
 
@@ -66,28 +75,41 @@ const FinzApp = ({ onMockLogin, hideHeader = false }) => {
     setSignupForm({ ...signupForm, [e.target.name]: e.target.value });
   };
 
+  const openPaperTrading = () => {
+    if (onNavigate) {
+      onNavigate('papertrading');
+      return;
+    }
+
+    setCurrentView('login');
+  };
+
   // --- VIEWS ---
 
   if (currentView === 'home') {
     return (
       <div className="min-h-screen bg-gray-950 text-gray-200 font-sans">
         {!hideHeader && (
-          <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-gray-950/80 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
-            <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <nav className={`fixed top-0 w-full z-50 border-b transition-all duration-300 ${
+            scrolled
+              ? 'border-gray-800/80 bg-gray-950/90 shadow-lg backdrop-blur-xl'
+              : 'border-transparent bg-gray-950/35 backdrop-blur-sm'
+          }`}>
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
               <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 bg-clip-text text-transparent">
                 FinWise
               </div>
-              <div className="hidden md:flex items-center space-x-8">
-                <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
-                <a href="#how-it-works" className="text-gray-300 hover:text-white transition-colors">How It Works</a>
-                <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</a>
-                <a href="#resources" className="text-gray-300 hover:text-white transition-colors">Resources</a>
+              <div className="hidden items-center gap-1 rounded-xl border border-gray-800 bg-gray-900/70 p-1 md:flex">
+                <a href="#features" className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white">Features</a>
+                <a href="#how-it-works" className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white">How It Works</a>
+                <a href="#pricing" className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white">Pricing</a>
+                <a href="#resources" className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white">Resources</a>
               </div>
-              <div className="hidden md:flex items-center space-x-4">
-                <button onClick={() => setCurrentView('login')} className="text-gray-300 hover:text-white transition-colors px-4 py-2 rounded-lg">
+              <div className="hidden items-center gap-3 md:flex">
+                <button onClick={() => setCurrentView('login')} className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800 hover:text-white">
                   Login
                 </button>
-                <button onClick={() => setCurrentView('signup')} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300">
+                <button onClick={() => setCurrentView('signup')} className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
                   Get Started
                 </button>
               </div>
@@ -98,16 +120,16 @@ const FinzApp = ({ onMockLogin, hideHeader = false }) => {
               </div>
             </div>
             {isMenuOpen && (
-              <div className="md:hidden bg-gray-950/90 backdrop-blur-md pb-4">
-                <div className="flex flex-col items-center space-y-4 pt-4">
-                  <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">Features</a>
-                  <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">How It Works</a>
-                  <a href="#pricing" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">Pricing</a>
-                  <a href="#resources" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition-colors text-lg">Resources</a>
-                  <button onClick={() => { setCurrentView('login'); setIsMenuOpen(false); }} className="text-gray-300 hover:text-white transition-colors text-lg">
+              <div className="md:hidden border-t border-gray-800 bg-gray-950/95 px-4 pb-4 pt-3 backdrop-blur-xl">
+                <div className="flex flex-col gap-2">
+                  <a href="#features" onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white">Features</a>
+                  <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white">How It Works</a>
+                  <a href="#pricing" onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white">Pricing</a>
+                  <a href="#resources" onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white">Resources</a>
+                  <button onClick={() => { setCurrentView('login'); setIsMenuOpen(false); }} className="rounded-lg px-3 py-2 text-left text-gray-300 hover:bg-gray-800 hover:text-white">
                     Login
                   </button>
-                  <button onClick={() => { setCurrentView('signup'); setIsMenuOpen(false); }} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300 text-lg">
+                  <button onClick={() => { setCurrentView('signup'); setIsMenuOpen(false); }} className="rounded-lg bg-blue-600 px-3 py-2 text-left font-medium text-white hover:bg-blue-700">
                     Get Started
                   </button>
                 </div>
@@ -232,7 +254,7 @@ const FinzApp = ({ onMockLogin, hideHeader = false }) => {
                   <p className="text-gray-400 text-lg mb-6">
                     Test your trading strategies in a real-time, risk-free environment. Our advanced simulator provides real-time market data to help you build confidence.
                   </p>
-                  <button className="text-blue-400 font-semibold group flex items-center hover:text-blue-300 transition-colors">
+                  <button onClick={openPaperTrading} className="text-blue-400 font-semibold group flex items-center hover:text-blue-300 transition-colors">
                     Start Simulating <ChevronRight className="ml-1 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
@@ -371,6 +393,11 @@ const FinzApp = ({ onMockLogin, hideHeader = false }) => {
               <h2 className="text-2xl font-semibold text-white mb-2">Welcome Back</h2>
               <p className="text-gray-400">Sign in to continue your financial journey</p>
             </div>
+            {authError && (
+              <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                {authError}
+              </div>
+            )}
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
@@ -428,6 +455,11 @@ const FinzApp = ({ onMockLogin, hideHeader = false }) => {
               <h2 className="text-2xl font-semibold text-white mb-2">Create your Account</h2>
               <p className="text-gray-400">Start your financial journey today.</p>
             </div>
+            {authError && (
+              <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                {authError}
+              </div>
+            )}
             <form onSubmit={handleSignup} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
@@ -478,8 +510,7 @@ const FinzApp = ({ onMockLogin, hideHeader = false }) => {
     );
   }
 
-  // Dashboard View (shown when logged in)
-  return <Dashboard onLogout={() => setCurrentView('home')} />;
+  return null;
 };
 
 export default FinzApp;

@@ -1,44 +1,145 @@
-# 💰 FinWise
+# FinWise
 
-> A smart and simple personal finance analyzer that helps users visualize, understand, and improve their spending habits.
+FinWise is a personal finance web app for tracking income, spending, monthly balances, social squads, paper trading, and AI-assisted financial guidance.
 
----
+## Features
 
-## ✨ Features
+- Google sign-in with Firebase Authentication.
+- Firestore-backed user profiles and transactions.
+- Dashboard with live total balance from saved inflow and outflow transactions.
+- Transactions page with monthly starting balance, ending balance, money spent, money received, net expenditure, and expenditure split pie chart.
+- AI Insights page powered by Groq's OpenAI-compatible API through the backend.
+- Context-aware chatbot that answers using the signed-in user's real transaction behavior.
+- Social squads with join/leave/member logic.
+- Paper trading simulator.
+- Firebase rules for user-owned transaction/profile data.
 
-- 📊 **Visual Reports:** Interactive charts to track income, expenses, and savings  
-- 💡 **Insights Panel:** Highlights spending trends and saving opportunities  
-- ⚙️ **Dynamic Dashboard:** Real-time updates with a smooth, responsive design  
-- 👤 **Personalized Experience:** Tailors insights based on user behavior  
-- 🔐 **Privacy Focused:** No external data sharing — everything runs locally
+## Architecture
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Frontend code lives in `src/` and is built with Vite + React. Browser code only reads browser-safe `VITE_` environment variables.
 
-## AI setup (Groq OpenAI-compatible)
-
-Insights, chatbot, and personalization AI requests now go through the backend (`backend/server.js`) so your API key is not exposed in the browser.
-
-### Backend env vars
-
-Use your existing root `.env` file:
+Backend code lives in `backend/` for local Express development. Production serverless endpoints live in `api/` for Vercel. AI keys stay server-side only.
 
 ```
+src/
+  components/        React pages and UI
+  config/            Browser-safe config such as Firebase and API base URL
+  services/          Frontend service layer for Firestore, auth, AI requests, and summaries
+
+backend/
+  server.js          Local Express entrypoint
+  src/config/        Server env loading
+  src/routes/        Express routes
+  src/services/      Shared AI prompt and normalization logic
+
+api/
+  chat.js            Vercel chatbot endpoint
+  insights.js        Vercel insights endpoint
+  _groq.js           Serverless Groq OpenAI-compatible client
+```
+
+## Environment Variables
+
+Create a root `.env` file for local development.
+
+```env
 GROQ_API_KEY=your_groq_api_key_here
-# optional
 GROQ_MODEL=llama-3.1-8b-instant
-```
 
-### Frontend env vars
-
-Create `.env` in project root (for Vite app):
-
-```
 VITE_API_BASE_URL=http://localhost:5000
-VITE_FINNHUB_API_KEY=your_finnhub_api_key_here
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+VITE_FINNHUB_API_KEY=your_finnhub_api_key
 ```
 
-### Endpoints used
+For Vercel, set at least:
 
-- `POST /insights` -> Generates structured insights/charts JSON from expense data.
-- `POST /chat` -> Generates chatbot replies.
-- `POST /personalization/rewards` -> Generates personalization rewards output.
+```env
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.1-8b-instant
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+VITE_FINNHUB_API_KEY=your_finnhub_api_key
+```
+
+In production, `VITE_API_BASE_URL` can be omitted because the frontend falls back to `/api`.
+
+## Running Locally
+
+Install dependencies:
+
+```bash
+npm install
+npm --prefix backend install
+```
+
+Run frontend and backend in separate terminals:
+
+```bash
+npm run dev:frontend
+npm run dev:backend
+```
+
+Then open the Vite URL shown in the terminal, usually `http://localhost:5173`.
+
+## Firebase
+
+Transactions are stored at:
+
+```text
+users/{uid}/transactions/{transactionId}
+```
+
+User profile data is stored at:
+
+```text
+users/{uid}
+```
+
+Deploy Firestore rules after changing `firestore.rules`:
+
+```bash
+npx firebase-tools deploy --only firestore:rules
+```
+
+## AI Behavior
+
+AI calls do not go directly from the browser to Groq. The browser sends safe request payloads to the backend/serverless API, and the server calls Groq with `GROQ_API_KEY`.
+
+### Insights
+
+`POST /insights` or `POST /api/insights`
+
+Generates finance insights with Groq and returns normalized chart-ready JSON. Chart data is deterministic so Recharts always receives matching fields.
+
+### Chatbot
+
+`POST /chat` or `POST /api/chat`
+
+The chatbot sends the user's question plus a financial context summary built from their profile and transactions. The prompt asks the AI to be practical, supportive, non-judgmental, and to base advice on real spending patterns.
+
+## Useful Commands
+
+```bash
+npm run lint
+npm run build
+npm run dev:frontend
+npm run dev:backend
+```
+
+## Deployment Notes
+
+- Add `GROQ_API_KEY` in Vercel project environment variables.
+- Add all required Firebase `VITE_` variables in Vercel.
+- Publish Firestore rules before testing authenticated Firestore reads/writes.
+- Never commit real API keys. Keep secrets in local `.env` and deployment environment variables.

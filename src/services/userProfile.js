@@ -1,5 +1,5 @@
 import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 
 const USERNAME_MAX_BASE_LENGTH = 18;
 

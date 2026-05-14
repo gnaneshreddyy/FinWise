@@ -1,8 +1,60 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, BarChart3, Wallet, History, DollarSign, IndianRupee, Wifi, WifiOff, Clock, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart3, Wallet, History, DollarSign, IndianRupee, RefreshCw, ArrowLeft } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
-const PaperTradingApp = () => {
+function loadJsonFromStorage(key, fallback) {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  } catch (error) {
+    console.warn(`Ignoring invalid ${key} local storage value:`, error);
+    localStorage.removeItem(key);
+    return fallback;
+  }
+}
+
+const DEFAULT_PORTFOLIO = {
+  balance: 100000,
+  holdings: {},
+  totalValue: 100000,
+  totalPL: 0,
+};
+
+function normalizePortfolio(value) {
+  if (!value || typeof value !== 'object') {
+    return DEFAULT_PORTFOLIO;
+  }
+
+  return {
+    balance: Number(value.balance) || DEFAULT_PORTFOLIO.balance,
+    holdings: value.holdings && typeof value.holdings === 'object' ? value.holdings : {},
+    totalValue: Number(value.totalValue) || DEFAULT_PORTFOLIO.totalValue,
+    totalPL: Number(value.totalPL) || 0,
+  };
+}
+
+function calculatePortfolioTotals(portfolio, stockList) {
+  let holdingsValue = 0;
+  let totalCost = 0;
+
+  Object.entries(portfolio.holdings).forEach(([symbol, holding]) => {
+    const quantity = Number(holding.quantity) || 0;
+    if (quantity <= 0) return;
+
+    const currentStock = stockList.find((stock) => stock.symbol === symbol);
+    const currentPrice = currentStock?.price ?? holding.avgPrice ?? 0;
+    holdingsValue += currentPrice * quantity;
+    totalCost += Number(holding.totalCost) || 0;
+  });
+
+  return {
+    ...portfolio,
+    totalValue: portfolio.balance + holdingsValue,
+    totalPL: holdingsValue - totalCost,
+  };
+}
+
+const PaperTradingApp = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('market');
   const [selectedMarket, setSelectedMarket] = useState('US');
   const [indianExchange, setIndianExchange] = useState('NSE');
@@ -14,25 +66,17 @@ const PaperTradingApp = () => {
 
   // Portfolio state - stored locally
   const [portfolio, setPortfolio] = useState(() => {
-    const saved = localStorage.getItem('trading-portfolio');
-    return saved ? JSON.parse(saved) : {
-      balance: 100000,
-      holdings: {},
-      totalValue: 100000,
-      totalPL: 0
-    };
+    return normalizePortfolio(loadJsonFromStorage('trading-portfolio', DEFAULT_PORTFOLIO));
   });
 
   // Transactions state - only completed trades
   const [transactions, setTransactions] = useState(() => {
-    const saved = localStorage.getItem('trading-transactions');
-    return saved ? JSON.parse(saved) : [];
+    return loadJsonFromStorage('trading-transactions', []);
   });
 
   // Portfolio history - all individual trades
   const [portfolioHistory, setPortfolioHistory] = useState(() => {
-    const saved = localStorage.getItem('trading-portfolio-history');
-    return saved ? JSON.parse(saved) : [];
+    return loadJsonFromStorage('trading-portfolio-history', []);
   });
 
   // API configuration
@@ -163,9 +207,11 @@ const PaperTradingApp = () => {
         time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
       };
 
-      const newTransactions = [completedTransaction, ...transactions];
-      setTransactions(newTransactions);
-      localStorage.setItem('trading-transactions', JSON.stringify(newTransactions));
+      setTransactions((prev) => {
+        const next = [completedTransaction, ...prev];
+        localStorage.setItem('trading-transactions', JSON.stringify(next));
+        return next;
+      });
     }
   };
 
@@ -199,11 +245,12 @@ const PaperTradingApp = () => {
       time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
     };
 
-    const newPortfolioHistory = [portfolioTrade, ...portfolioHistory];
-    setPortfolioHistory(newPortfolioHistory);
-    localStorage.setItem('trading-portfolio-history', JSON.stringify(newPortfolioHistory));
+    setPortfolioHistory((prev) => {
+      const next = [portfolioTrade, ...prev];
+      localStorage.setItem('trading-portfolio-history', JSON.stringify(next));
+      return next;
+    });
     
-    // Update portfolio
     setPortfolio(prev => {
       const newPortfolio = { ...prev };
       const currentHolding = newPortfolio.holdings[stock.symbol] || { quantity: 0, totalCost: 0, avgPrice: 0 };
@@ -236,21 +283,10 @@ const PaperTradingApp = () => {
         }
       }
       
-      // Update total portfolio value
-      let holdingsValue = 0;
-      Object.entries(newPortfolio.holdings).forEach(([symbol, holding]) => {
-        if (holding.quantity > 0) {
-          const currentStock = stocks.find(s => s.symbol === symbol);
-          if (currentStock) {
-            holdingsValue += currentStock.price * holding.quantity;
-          }
-        }
-      });
+      const portfolioWithTotals = calculatePortfolioTotals(newPortfolio, stocks);
       
-      newPortfolio.totalValue = newPortfolio.balance + holdingsValue;
-      
-      localStorage.setItem('trading-portfolio', JSON.stringify(newPortfolio));
-      return newPortfolio;
+      localStorage.setItem('trading-portfolio', JSON.stringify(portfolioWithTotals));
+      return portfolioWithTotals;
     });
     
     showSuccess('Trade Executed', `${type} ${quantity} shares of ${stock.name}`);
@@ -262,7 +298,19 @@ const PaperTradingApp = () => {
     setStocks(mockStocks);
     setMarketData(mockIndex);
     setChartData(generateChartData(mockIndex.value));
+    // Mock market data should refresh only when the selected market changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMarket, indianExchange]);
+
+  useEffect(() => {
+    if (!stocks.length) return;
+
+    setPortfolio((prev) => {
+      const next = calculatePortfolioTotals(prev, stocks);
+      localStorage.setItem('trading-portfolio', JSON.stringify(next));
+      return next;
+    });
+  }, [stocks]);
 
   // Update chart data when timeframe changes
   useEffect(() => {
@@ -351,9 +399,20 @@ const PaperTradingApp = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
-      <header className="bg-gray-800 p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-blue-400">Investr</h1>
+      <header className="border-b border-gray-800 bg-gray-950/90 p-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <div className="flex items-center gap-3">
+            {onBack ? (
+              <button
+                onClick={onBack}
+                className="p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white"
+                aria-label="Back"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            ) : null}
+            <h1 className="text-2xl font-bold text-blue-400">Investr</h1>
+          </div>
           <div className="flex items-center space-x-4">
             <div className="flex bg-gray-700 rounded-lg p-1">
               <button

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase'; // Make sure you have this file
+import { auth, firebaseProjectId } from './config/firebase';
 import { getOrCreateUserProfile, getUserProfile } from './services/userProfile';
 import { getUserTransactions, saveUserTransaction } from './services/transactions';
+import { logout } from './services/authService';
 import Home from './components/Home';
 import Dashboard from './components/Dashboard';
 import Navbar from './components/Navbar';
@@ -13,11 +14,12 @@ import UserProfile from './components/UserProfile';
 import Rewards from './components/Rewards';
 import Insights from './components/Insights';
 import Personalization from './components/Personalization';
+import Transactions from './components/Transactions';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [appView, setAppView] = useState('dashboard'); // 'home' | 'dashboard' | 'papertrading' | 'squads' | 'profile' | 'rewards' | 'insights'
+  const [appView, setAppView] = useState('dashboard'); // 'home' | 'dashboard' | 'transactions' | 'papertrading' | 'squads' | 'profile' | 'rewards' | 'insights'
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -33,7 +35,7 @@ function App() {
   const handleLogout = async () => {
     try {
       if (auth.currentUser) {
-        await auth.signOut();
+        await logout();
       }
     } catch {
       // no-op for mock users
@@ -45,11 +47,6 @@ function App() {
       setTransactionError(null);
       setAppView('dashboard');
     }
-  };
-
-  const handleMockLogin = () => {
-    setUser({ email: 'guest@local' });
-    setAppView('dashboard');
   };
 
   // This effect runs once when the app starts and listens for auth changes
@@ -69,12 +66,8 @@ function App() {
       try {
         const profile = await getOrCreateUserProfile(currentUser);
         setCurrentUserProfile(profile);
-        const existingTransactions = await getUserTransactions(currentUser.uid);
-        setTransactions(existingTransactions);
-        setTransactionError(null);
       } catch (error) {
         console.error('Failed to load profile from database:', error);
-        // Minimal fallback to keep profile UI stable.
         setCurrentUserProfile({
           uid: currentUser.uid,
           fullName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
@@ -85,15 +78,25 @@ function App() {
           squadRole: null,
           points: { total: 0, actions: [] },
         });
-        try {
-          const existingTransactions = await getUserTransactions(currentUser.uid);
-          setTransactions(existingTransactions);
-          setTransactionError(null);
-        } catch (transactionLoadError) {
-          console.error('Failed to load transactions from database:', transactionLoadError);
-          setTransactions([]);
-          setTransactionError('Could not load your saved transactions right now.');
-        }
+      }
+
+      try {
+        const existingTransactions = await getUserTransactions(currentUser.uid);
+        setTransactions(existingTransactions);
+        setTransactionError(null);
+      } catch (transactionLoadError) {
+        console.error('Failed to load transactions from database:', {
+          code: transactionLoadError?.code,
+          message: transactionLoadError?.message,
+          uid: currentUser.uid,
+          projectId: firebaseProjectId,
+        });
+        setTransactions([]);
+        setTransactionError(
+          transactionLoadError?.code === 'permission-denied'
+            ? `Firestore permissions are blocking transactions for UID ${currentUser.uid}. Confirm your rules are published in project ${firebaseProjectId} and the data path is users/${currentUser.uid}/transactions.`
+            : 'Could not load your saved transactions right now.'
+        );
       }
       setLoading(false); // We're done loading
     });
@@ -139,20 +142,21 @@ function App() {
         />
       )}
 
-      {!user && <Home onMockLogin={handleMockLogin} />}
+      {!user && appView !== 'papertrading' && <Home onNavigate={setAppView} />}
 
-      {user && (
+      {appView === 'papertrading' ? (
+        <PaperTradingApp onBack={() => setAppView(user ? 'dashboard' : 'home')} />
+      ) : user && (
         appView === 'home' ? (
-          <Home hideHeader={true} />
+          <Home hideHeader={true} onNavigate={setAppView} />
         ) : appView === 'dashboard' ? (
           <Dashboard
             user={user}
+            profile={currentUserProfile}
             transactions={transactions}
             onAddTransaction={handleAddTransaction}
             persistenceError={transactionError}
           />
-        ) : appView === 'papertrading' ? (
-          <PaperTradingApp />
         ) : appView === 'squads' ? (
           <Squads
             currentUser={user}
@@ -161,6 +165,8 @@ function App() {
             onOpenProfile={(profile) => { setSelectedProfile(profile); setAppView('profile'); }}
             onGoToRewards={() => setAppView('rewards')}
           />
+        ) : appView === 'transactions' ? (
+          <Transactions transactions={transactions} />
         ) : appView === 'profile' ? (
           <UserProfile
             profile={selectedProfile || currentUserProfile}
@@ -177,6 +183,7 @@ function App() {
         ) : (
           <Dashboard
             user={user}
+            profile={currentUserProfile}
             transactions={transactions}
             onAddTransaction={handleAddTransaction}
             persistenceError={transactionError}
@@ -184,7 +191,11 @@ function App() {
         )
       )}
 
-      <Chatbot />
+      <Chatbot
+        user={user}
+        profile={currentUserProfile}
+        transactions={transactions}
+      />
     </>
   );
 }
