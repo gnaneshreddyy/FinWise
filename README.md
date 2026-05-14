@@ -145,6 +145,10 @@ npm run dev:backend
 
 ## Deployment Notes
 
+- The root `vercel.json` deploys the app as one Vite frontend with Vercel serverless functions in `api/`.
+- Use `./` as the Vercel root directory.
+- Build command: `npm run build`.
+- Output directory: `dist`.
 - Add `GROQ_API_KEY` in Vercel project environment variables.
 - Add all required Firebase `VITE_` variables in Vercel.
 - Publish Firestore rules before testing authenticated Firestore reads/writes.
