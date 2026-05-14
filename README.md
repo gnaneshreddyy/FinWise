@@ -16,15 +16,19 @@ FinWise is a personal finance web app for tracking income, spending, monthly bal
 
 ## Architecture
 
-Frontend code lives in `src/` and is built with Vite + React. Browser code only reads browser-safe `VITE_` environment variables.
+Frontend code lives in `frontend/` and is built with Vite + React. Browser code only reads browser-safe `VITE_` environment variables.
 
 Backend code lives in `backend/` for local Express development. Production serverless endpoints live in `api/` for Vercel. AI keys stay server-side only.
 
 ```
-src/
-  components/        React pages and UI
-  config/            Browser-safe config such as Firebase and API base URL
-  services/          Frontend service layer for Firestore, auth, AI requests, and summaries
+frontend/
+  index.html         Vite HTML entrypoint
+  vite.config.js     Frontend-only Vite config
+  public/            Static frontend assets
+  src/
+    components/      React pages and UI
+    config/          Browser-safe config such as Firebase and API base URL
+    services/        Frontend service layer for Firestore, auth, AI requests, and summaries
 
 backend/
   server.js          Local Express entrypoint
@@ -91,6 +95,8 @@ npm run dev:backend
 ```
 
 Then open the Vite URL shown in the terminal, usually `http://localhost:5173`.
+
+The root `package.json` delegates frontend commands to `frontend/vite.config.js`, so the React app stays isolated from backend/serverless code.
 
 ## Firebase
 
