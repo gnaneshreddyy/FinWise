@@ -2,6 +2,9 @@
 
 FinWise is a personal finance web app for tracking income, spending, monthly balances, social squads, paper trading, and AI-assisted financial guidance.
 
+[**Live Demo**](https://fin-wise-self.vercel.app/)
+
+
 ## Features
 
 - Google sign-in with Firebase Authentication.
