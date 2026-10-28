@@ -1,9 +1,92 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Menu, X, ChevronRight, TrendingUp, Shield, Zap, Eye, EyeOff, ArrowLeft, Receipt } from 'lucide-react';
+import { Menu, X, ChevronRight, TrendingUp, Eye, EyeOff, ArrowLeft, Receipt, CalendarRange, MessageSquareText } from 'lucide-react';
 import { loginWithEmail, loginWithGoogle, signupWithEmail } from '../services/authService';
 
+const LANDING_FEATURES = [
+  {
+    icon: Receipt,
+    title: 'Log in seconds',
+    body: 'Add income and spending with a category, date and note. Everything is stored against your account.',
+  },
+  {
+    icon: CalendarRange,
+    title: 'Monthly statements',
+    body: 'Opening and closing balance, money in, money out and a category split for every month.',
+  },
+  {
+    icon: MessageSquareText,
+    title: 'Ask about your money',
+    body: 'An assistant that reads your own transactions, so answers are about your numbers, not generic tips.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Practice investing',
+    body: 'A paper-trading simulator with ₹1,00,000 of virtual cash. Nothing real is ever bought or sold.',
+  },
+];
 
-const FinzApp = ({ hideHeader = false, onNavigate }) => {
+const LANDING_FAQ = [
+  {
+    q: 'Do I need to connect my bank?',
+    a: 'No. FinWise never asks for bank credentials. You add transactions yourself.',
+  },
+  {
+    q: 'Who can see my transactions?',
+    a: 'Only you. Transactions live under your account and database rules block every other user from reading them.',
+  },
+  {
+    q: 'Is the assistant giving financial advice?',
+    a: 'No. It explains patterns in the data you entered. Talk to a registered advisor before making investment decisions.',
+  },
+];
+
+const PREVIEW_SPLIT = [
+  { label: 'Food & dining', amount: 7420, share: 41 },
+  { label: 'Transport', amount: 3980, share: 22 },
+  { label: 'Bills', amount: 3610, share: 20 },
+  { label: 'Shopping', amount: 3230, share: 17 },
+];
+
+// Static illustration of the monthly statement screen, built from the same tokens as the app.
+function StatementPreview() {
+  return (
+    <div className="rounded-xl border border-line bg-surface p-6" aria-hidden="true">
+      <div className="mb-6 flex items-baseline justify-between">
+        <p className="text-sm text-ink-muted">October statement</p>
+        <p className="text-xs text-ink-subtle">Sample data</p>
+      </div>
+      <div className="mb-6 grid grid-cols-3 gap-4 border-b border-line pb-6">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-ink-subtle">In</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-gain">₹42,000</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wider text-ink-subtle">Out</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-loss">₹18,240</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wider text-ink-subtle">Saved</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-ink">57%</p>
+        </div>
+      </div>
+      <div className="space-y-4">
+        {PREVIEW_SPLIT.map((row) => (
+          <div key={row.label}>
+            <div className="mb-1.5 flex justify-between text-sm">
+              <span className="text-ink-muted">{row.label}</span>
+              <span className="tabular-nums text-ink">₹{row.amount.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-raised">
+              <div className="h-1.5 rounded-full bg-accent" style={{ width: `${row.share}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const Home = ({ hideHeader = false, onNavigate }) => {
   const [currentView, setCurrentView] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -88,48 +171,44 @@ const FinzApp = ({ hideHeader = false, onNavigate }) => {
 
   if (currentView === 'home') {
     return (
-      <div className="min-h-screen bg-gray-950 text-gray-200 font-sans">
+      <div className="min-h-screen bg-canvas text-ink font-sans">
         {!hideHeader && (
-          <nav className={`fixed top-0 w-full z-50 border-b transition-all duration-300 ${
+          <nav className={`fixed top-0 w-full z-50 border-b transition-colors ${
             scrolled
-              ? 'border-gray-800/80 bg-gray-950/90 shadow-lg backdrop-blur-xl'
-              : 'border-transparent bg-gray-950/35 backdrop-blur-sm'
+              ? 'border-line/80 bg-canvas/90 backdrop-blur-xl'
+              : 'border-transparent bg-canvas/35 backdrop-blur-sm'
           }`}>
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-              <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 bg-clip-text text-transparent">
+              <div className="text-2xl font-bold text-ink tracking-tight">
                 FinWise
               </div>
-              <div className="hidden items-center gap-1 rounded-xl border border-gray-800 bg-gray-900/70 p-1 md:flex">
-                <a href="#features" className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white">Features</a>
-                <a href="#how-it-works" className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white">How It Works</a>
-                <a href="#pricing" className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white">Pricing</a>
-                <a href="#resources" className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white">Resources</a>
+              <div className="hidden items-center gap-1 rounded-xl border border-line bg-surface/70 p-1 md:flex">
+                <a href="#features" className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:bg-raised hover:text-ink">Features</a>
+                <a href="#faq" className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:bg-raised hover:text-ink">FAQ</a>
               </div>
               <div className="hidden items-center gap-3 md:flex">
-                <button onClick={() => setCurrentView('login')} className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800 hover:text-white">
+                <button onClick={() => setCurrentView('login')} className="rounded-lg border border-line-strong px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-raised hover:text-ink">
                   Login
                 </button>
-                <button onClick={() => setCurrentView('signup')} className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                <button onClick={() => setCurrentView('signup')} className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hover">
                   Get Started
                 </button>
               </div>
               <div className="md:hidden">
-                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white focus:outline-none">
+                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-ink focus:outline-none">
                   {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </button>
               </div>
             </div>
             {isMenuOpen && (
-              <div className="md:hidden border-t border-gray-800 bg-gray-950/95 px-4 pb-4 pt-3 backdrop-blur-xl">
+              <div className="md:hidden border-t border-line bg-canvas/95 px-4 pb-4 pt-3 backdrop-blur-xl">
                 <div className="flex flex-col gap-2">
-                  <a href="#features" onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white">Features</a>
-                  <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white">How It Works</a>
-                  <a href="#pricing" onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white">Pricing</a>
-                  <a href="#resources" onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white">Resources</a>
-                  <button onClick={() => { setCurrentView('login'); setIsMenuOpen(false); }} className="rounded-lg px-3 py-2 text-left text-gray-300 hover:bg-gray-800 hover:text-white">
+                  <a href="#features" onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2 text-ink-muted hover:bg-raised hover:text-ink">Features</a>
+                  <a href="#faq" onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2 text-ink-muted hover:bg-raised hover:text-ink">FAQ</a>
+                  <button onClick={() => { setCurrentView('login'); setIsMenuOpen(false); }} className="rounded-lg px-3 py-2 text-left text-ink-muted hover:bg-raised hover:text-ink">
                     Login
                   </button>
-                  <button onClick={() => { setCurrentView('signup'); setIsMenuOpen(false); }} className="rounded-lg bg-blue-600 px-3 py-2 text-left font-medium text-white hover:bg-blue-700">
+                  <button onClick={() => { setCurrentView('signup'); setIsMenuOpen(false); }} className="rounded-lg bg-accent px-3 py-2 text-left font-medium text-accent-ink hover:bg-accent-hover">
                     Get Started
                   </button>
                 </div>
@@ -138,242 +217,74 @@ const FinzApp = ({ hideHeader = false, onNavigate }) => {
           </nav>
         )}
 
-        <div className="relative overflow-hidden">
-          {/* Hero Section */}
-          <div className="pt-32 pb-24 md:pt-40 md:pb-32 bg-gradient-to-br from-gray-950 via-purple-950 to-gray-950 relative overflow-hidden">
-            {/* Background blob effects */}
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse -z-10"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000 -z-10"></div>
-
-            <div className="container mx-auto px-6 text-center">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-                Unlock Your Financial <br />
-                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 bg-clip-text text-transparent">
-                  Intelligence.
-                </span>
-              </h1>
-              <p className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto mb-10">
-                Empowering the next generation to build adaptive financial habits for life. Our clean, modern interface and powerful tools make it easy to manage your money.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button onClick={() => setCurrentView('signup')} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
-                  Get Started
-                </button>
-                <a href="#features" className="text-gray-300 border border-gray-700 hover:border-blue-500 hover:text-white font-semibold px-8 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
-                  Explore Features
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {/* Intuitive AI Dashboard Section */}
-          <section className="py-20 md:py-28 bg-gray-950" id="dashboard-preview">
-            <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-              <div className="order-2 md:order-1 text-center md:text-left">
-                <h2 className="text-4xl font-bold text-white mb-4">Intuitive AI Dashboard</h2>
-                <p className="text-lg text-gray-400 mb-6">
-                  Visualize your financial universe. Our clean, modern interface makes it easy to understand your money at a glance.
+        <main>
+          {/* Hero */}
+          <section className="border-b border-line pt-32 pb-20 md:pt-40 md:pb-28">
+            <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 md:grid-cols-2">
+              <div>
+                <p className="mb-4 text-sm font-medium uppercase tracking-widest text-accent">Personal finance, without the guesswork</p>
+                <h1 className="mb-6 text-4xl font-semibold leading-tight tracking-tight text-ink lg:text-6xl">
+                  Know where your money went, and where it&apos;s going.
+                </h1>
+                <p className="mb-10 max-w-xl text-lg text-ink-muted">
+                  Log what you earn and spend. FinWise turns it into monthly statements, spending patterns and an assistant that answers questions about your own numbers.
                 </p>
-                <button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg">
-                  See It In Action
-                </button>
-              </div>
-              <div className="order-1 md:order-2">
-                <div className="bg-gray-800 rounded-xl p-6 aspect-video flex items-center justify-center text-gray-500 text-xl border border-gray-700 shadow-xl">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button onClick={() => setCurrentView('signup')} className="flex items-center justify-center rounded-lg bg-accent px-6 py-3 font-semibold text-accent-ink transition-colors hover:bg-accent-hover">
+                    Get started <ChevronRight className="ml-1 h-5 w-5" />
+                  </button>
+                  <button onClick={openPaperTrading} className="flex items-center justify-center rounded-lg border border-line-strong px-6 py-3 font-semibold text-ink transition-colors hover:bg-raised">
+                    Try the market simulator
+                  </button>
                 </div>
+              </div>
+
+              <StatementPreview />
+            </div>
+          </section>
+
+          {/* Features */}
+          <section className="py-20 md:py-28" id="features">
+            <div className="mx-auto max-w-6xl px-6">
+              <h2 className="mb-3 text-3xl font-semibold tracking-tight text-ink">What it does today</h2>
+              <p className="mb-12 max-w-2xl text-ink-muted">No bank linking. You stay in control of what goes in.</p>
+              <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line md:grid-cols-2 lg:grid-cols-4">
+                {LANDING_FEATURES.map(({ icon: Icon, title, body }) => (
+                  <div key={title} className="bg-surface p-6">
+                    <Icon className="mb-5 h-5 w-5 text-accent" />
+                    <h3 className="mb-2 font-semibold text-ink">{title}</h3>
+                    <p className="text-sm leading-relaxed text-ink-muted">{body}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
 
-          {/* Key Features Section */}
-          <section className="py-20 md:py-28 bg-gray-950" id="features">
-            <div className="container mx-auto px-6 text-center">
-              <h2 className="text-4xl font-bold text-white mb-4">Key Features</h2>
-              <p className="text-lg text-gray-400 max-w-3xl mx-auto mb-16">
-                Unlock a smarter way to manage your finances with FinWise's powerful, intuitive tools.
-              </p>
-              <div className="grid md:grid-cols-3 gap-8">
-                {/* Feature Card 1 */}
-                <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-8 border border-gray-800 hover:border-blue-500/50 transition-all duration-300 group">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 w-14 h-14 rounded-full flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
-                    <Zap className="h-7 w-7 text-white" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">AI-Powered Budgeting</h3>
-                  <p className="text-gray-400">
-                    Smartly categorize and forecast your spending, helping you stay on track towards your financial goals.
-                  </p>
-                </div>
-                {/* Feature Card 2 */}
-                <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-8 border border-gray-800 hover:border-purple-500/50 transition-all duration-300 group">
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-600 w-14 h-14 rounded-full flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
-                    <Shield className="h-7 w-7 text-white" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">Smart Savings Goals</h3>
-                  <p className="text-gray-400">
-                    Set and track automated savings goals, with personalized advice to reach them faster.
-                  </p>
-                </div>
-                {/* Feature Card 3 */}
-                <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-8 border border-gray-800 hover:border-pink-500/50 transition-all duration-300 group">
-                  <div className="bg-gradient-to-r from-pink-500 to-red-600 w-14 h-14 rounded-full flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
-                    <TrendingUp className="h-7 w-7 text-white" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">Advanced Investment Insights</h3>
-                  <p className="text-gray-400">
-                    Understand market trends and get recommendations for your portfolio to maximize returns.
-                  </p>
-                </div>
+          {/* FAQ */}
+          <section className="border-t border-line py-20 md:py-28" id="faq">
+            <div className="mx-auto max-w-3xl px-6">
+              <h2 className="mb-10 text-3xl font-semibold tracking-tight text-ink">Questions</h2>
+              <div className="divide-y divide-line border-y border-line">
+                {LANDING_FAQ.map(({ q, a }) => (
+                  <details key={q} className="group py-5">
+                    <summary className="flex cursor-pointer list-none items-center justify-between font-medium text-ink">
+                      {q}
+                      <ChevronRight className="h-5 w-5 text-ink-subtle transition-transform group-open:rotate-90" />
+                    </summary>
+                    <p className="mt-3 text-ink-muted">{a}</p>
+                  </details>
+                ))}
               </div>
             </div>
           </section>
 
-          {/* How It Works Section */}
-          <section className="py-20 md:py-28 bg-gray-950" id="how-it-works">
-            <div className="container max-w-6xl mx-auto px-6">
-              <div className="text-center mb-16">
-                <h2 className="text-4xl font-bold text-white mb-4">
-                  How It Works
-                </h2>
-                <p className="text-xl text-gray-400">
-                  A visual journey through FinWise's core financial intelligence tools.
-                </p>
-              </div>
-              <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
-                <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800 shadow-lg">
-                  <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 text-lg">
-                    Market Simulator Visual
-                  </div>
-                </div>
-                <div className="text-center md:text-left">
-                  <div className="inline-flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <TrendingUp className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-3xl font-semibold text-white">Risk-Free Market Simulator</h3>
-                  </div>
-                  <p className="text-gray-400 text-lg mb-6">
-                    Test your trading strategies in a real-time, risk-free environment. Our advanced simulator provides real-time market data to help you build confidence.
-                  </p>
-                  <button onClick={openPaperTrading} className="text-blue-400 font-semibold group flex items-center hover:text-blue-300 transition-colors">
-                    Start Simulating <ChevronRight className="ml-1 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              </div>
-              <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div className="text-center md:text-left order-2 md:order-1">
-                  <div className="inline-flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-                      <Receipt className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-3xl font-semibold text-white">Smart Receipt Scanning</h3>
-                  </div>
-                  <p className="text-gray-400 text-lg mb-6">
-                    Effortlessly track expenses. Snap pictures of your receipts, and our AI will categorize them, providing instant insights into your spending habits.
-                  </p>
-                  <button className="text-pink-400 font-semibold group flex items-center hover:text-pink-300 transition-colors">
-                    Get Started <ChevronRight className="ml-1 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-                <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800 shadow-lg order-1 md:order-2">
-                  <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 text-lg">
-                    Receipt Scanning Visual
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* FAQ Section */}
-          <section className="py-20 md:py-28 bg-gray-950" id="faq">
-            <div className="container mx-auto px-6 max-w-4xl">
-              <div className="text-center mb-16">
-                <h2 className="text-4xl font-bold text-white mb-4">Frequently Asked Questions</h2>
-                <p className="text-lg text-gray-400">Have questions? We've got answers.</p>
-              </div>
-              <div className="space-y-6">
-                <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800 hover:border-blue-500/50 transition-all duration-300 cursor-pointer">
-                  <button className="flex justify-between items-center w-full text-left">
-                    <h3 className="text-xl font-semibold text-white">Is FinWise secure?</h3>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
-                  </button>
-                  <p className="text-gray-400 mt-2 hidden">
-                    Yes, FinWise uses bank-level encryption and robust security protocols to protect your data. Your financial information is always safe and confidential with FinWise.
-                  </p>
-                </div>
-                <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800 hover:border-purple-500/50 transition-all duration-300 cursor-pointer">
-                  <button className="flex justify-between items-center w-full text-left">
-                    <h3 className="text-xl font-semibold text-white">What is the pricing?</h3>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
-                  </button>
-                  <p className="text-gray-400 mt-2 hidden">
-                    FinWise offers various subscription plans tailored to different needs, including a free tier for basic features and premium tiers for advanced analytics.
-                  </p>
-                </div>
-                <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800 hover:border-pink-500/50 transition-all duration-300 cursor-pointer">
-                  <button className="flex justify-between items-center w-full text-left">
-                    <h3 className="text-xl font-semibold text-white">How does FinWise help with investments?</h3>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
-                  </button>
-                  <p className="text-gray-400 mt-2 hidden">
-                    Our AI-powered insights provide personalized recommendations and market analysis to help you make informed investment decisions and optimize your portfolio.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Call to Action Section */}
-          <section className="py-20 md:py-28 bg-gradient-to-r from-gray-800 to-purple-900">
-            <div className="container mx-auto px-6 text-center">
-              <h2 className="text-4xl font-bold text-white mb-6">Ready to Transform Your Financial Future?</h2>
-              <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-10">
-                Join thousands of users who are taking control of their finances with FinWise.
-              </p>
-              <button onClick={() => setCurrentView('signup')} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-10 py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg">
-                Get Started Today
-              </button>
-            </div>
-          </section>
-
-          {/* Footer */}
-          <footer className="bg-gray-950 py-12">
-            <div className="container mx-auto px-6 grid md:grid-cols-4 gap-8 text-gray-400">
-              <div>
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 bg-clip-text text-transparent mb-4">
-                  FinWise
-                </h3>
-                <p className="text-sm mb-4">Smart financial management, for everyone.</p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white mb-4">Product</h4>
-                <ul className="space-y-2">
-                  <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white mb-4">Company</h4>
-                <ul className="space-y-2">
-                  <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white mb-4">Legal</h4>
-                <ul className="space-y-2">
-                  <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Cookie Policy</a></li>
-                </ul>
-              </div>
-            </div>
-            <div className="text-center text-gray-500 text-sm mt-12">
-              © 2024 FinWise. All rights reserved.
+          <footer className="border-t border-line py-10">
+            <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 text-sm text-ink-subtle sm:flex-row sm:justify-between">
+              <span className="font-semibold text-ink-muted">FinWise</span>
+              <span>Educational tool. Not financial advice.</span>
             </div>
           </footer>
-        </div>
+        </main>
       </div>
     );
   }
@@ -381,58 +292,57 @@ const FinzApp = ({ hideHeader = false, onNavigate }) => {
   // Login Page
   if (currentView === 'login') {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4 font-sans">
-        <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 w-[800px] h-[800px] bg-gradient-to-tr from-blue-900/40 via-purple-900/30 to-pink-900/20 rounded-full blur-3xl opacity-50"></div>
+      <div className="min-h-screen bg-canvas flex items-center justify-center px-4 font-sans">
         <div className="relative w-full max-w-md mx-auto">
-          <button onClick={() => setCurrentView('home')} className="flex items-center text-blue-400 hover:text-blue-300 transition-colors duration-200 mb-6">
+          <button onClick={() => setCurrentView('home')} className="flex items-center text-accent hover:text-accent-hover transition-colors mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
           </button>
-          <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-8 border border-gray-700/50 shadow-lg">
+          <div className="bg-surface rounded-xl p-8 border border-line">
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 bg-clip-text text-transparent mb-4">FinWise</h1>
-              <h2 className="text-2xl font-semibold text-white mb-2">Welcome Back</h2>
-              <p className="text-gray-400">Sign in to continue your financial journey</p>
+              <h1 className="text-4xl font-bold text-ink tracking-tight mb-4">FinWise</h1>
+              <h2 className="text-2xl font-semibold text-ink mb-2">Welcome Back</h2>
+              <p className="text-ink-muted">Sign in to continue your financial journey</p>
             </div>
             {authError && (
-              <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              <div className="mb-4 rounded-lg border border-loss/40 bg-loss/10 px-4 py-3 text-sm text-loss">
                 {authError}
               </div>
             )}
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                <input type="email" name="email" id="email" value={loginForm.email} onChange={handleLoginInputChange} className="w-full bg-gray-800/50 text-white placeholder-gray-500 px-4 py-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="you@example.com" required />
+                <label htmlFor="email" className="block text-sm font-medium text-ink-muted mb-2">Email Address</label>
+                <input type="email" name="email" id="email" value={loginForm.email} onChange={handleLoginInputChange} className="w-full bg-raised text-ink placeholder-ink-subtle px-4 py-3 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors" placeholder="you@example.com" required />
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                <label htmlFor="password" className="block text-sm font-medium text-ink-muted mb-2">Password</label>
                 <div className="relative">
-                  <input type={showPassword ? "text" : "password"} name="password" id="password" value={loginForm.password} onChange={handleLoginInputChange} className="w-full bg-gray-800/50 text-white placeholder-gray-500 px-4 py-3 pr-12 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter your password" required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-400 transition-colors duration-200">
+                  <input type={showPassword ? "text" : "password"} name="password" id="password" value={loginForm.password} onChange={handleLoginInputChange} className="w-full bg-raised text-ink placeholder-ink-subtle px-4 py-3 pr-12 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors" placeholder="Enter your password" required />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-ink-muted hover:text-accent-hover transition-colors">
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
-              <button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
+              <button type="submit" className="w-full bg-accent hover:bg-accent-hover text-accent-ink font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
                 Sign In <ChevronRight className="ml-2 h-5 w-5" />
               </button>
             </form>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-700"></span>
+                <span className="w-full border-t border-line-strong"></span>
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-gray-900/50 px-2 text-gray-400 backdrop-blur-sm">Or continue with</span>
+              <div className="relative flex justify-center text-xs uppercase tracking-wider">
+                <span className="bg-surface/50 px-2 text-ink-muted backdrop-blur-sm">Or continue with</span>
               </div>
             </div>
             <button
               onClick={handleGoogleSignIn}
-              className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg">
+              className="w-full flex items-center justify-center gap-2 bg-raised hover:bg-line text-ink font-semibold py-3 px-4 rounded-lg transition-colors">
               Sign in with Google
             </button>
             
             <div className="mt-6 text-center">
-              <p className="text-gray-400">Don't have an account? <button onClick={() => setCurrentView('signup')} className="text-blue-400 hover:text-blue-300 transition-colors duration-200 font-semibold">Sign up</button></p>
+              <p className="text-ink-muted">Don't have an account? <button onClick={() => setCurrentView('signup')} className="text-accent hover:text-accent-hover transition-colors font-semibold">Sign up</button></p>
             </div>
           </div>
         </div>
@@ -443,66 +353,65 @@ const FinzApp = ({ hideHeader = false, onNavigate }) => {
   // Sign Up Page
   if (currentView === 'signup') {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4 py-12 font-sans">
-        <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 w-[800px] h-[800px] bg-gradient-to-tr from-blue-900/40 via-purple-900/30 to-pink-900/20 rounded-full blur-3xl opacity-50"></div>
+      <div className="min-h-screen bg-canvas flex items-center justify-center px-4 py-12 font-sans">
         <div className="relative w-full max-w-md mx-auto">
-          <button onClick={() => setCurrentView('home')} className="flex items-center text-blue-400 hover:text-blue-300 transition-colors duration-200 mb-6">
+          <button onClick={() => setCurrentView('home')} className="flex items-center text-accent hover:text-accent-hover transition-colors mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
           </button>
-          <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-8 border border-gray-700/50 shadow-lg">
+          <div className="bg-surface rounded-xl p-8 border border-line">
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 bg-clip-text text-transparent mb-4">FinWise</h1>
-              <h2 className="text-2xl font-semibold text-white mb-2">Create your Account</h2>
-              <p className="text-gray-400">Start your financial journey today.</p>
+              <h1 className="text-4xl font-bold text-ink tracking-tight mb-4">FinWise</h1>
+              <h2 className="text-2xl font-semibold text-ink mb-2">Create your Account</h2>
+              <p className="text-ink-muted">Start your financial journey today.</p>
             </div>
             {authError && (
-              <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              <div className="mb-4 rounded-lg border border-loss/40 bg-loss/10 px-4 py-3 text-sm text-loss">
                 {authError}
               </div>
             )}
             <form onSubmit={handleSignup} className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-                <input type="text" name="name" id="name" value={signupForm.name} onChange={handleSignupInputChange} className="w-full bg-gray-800/50 text-white placeholder-gray-500 px-4 py-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter your full name" required />
+                <label htmlFor="name" className="block text-sm font-medium text-ink-muted mb-2">Full Name</label>
+                <input type="text" name="name" id="name" value={signupForm.name} onChange={handleSignupInputChange} className="w-full bg-raised text-ink placeholder-ink-subtle px-4 py-3 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors" placeholder="Enter your full name" required />
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                <input type="email" name="email" id="email" value={signupForm.email} onChange={handleSignupInputChange} className="w-full bg-gray-800/50 text-white placeholder-gray-500 px-4 py-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="you@example.com" required />
+                <label htmlFor="email" className="block text-sm font-medium text-ink-muted mb-2">Email Address</label>
+                <input type="email" name="email" id="email" value={signupForm.email} onChange={handleSignupInputChange} className="w-full bg-raised text-ink placeholder-ink-subtle px-4 py-3 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors" placeholder="you@example.com" required />
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                <label htmlFor="password" className="block text-sm font-medium text-ink-muted mb-2">Password</label>
                 <div className="relative">
-                  <input type={showPassword ? "text" : "password"} name="password" id="password" value={signupForm.password} onChange={handleSignupInputChange} className="w-full bg-gray-800/50 text-white placeholder-gray-500 px-4 py-3 pr-12 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Create a strong password" required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-400 transition-colors duration-200">
+                  <input type={showPassword ? "text" : "password"} name="password" id="password" value={signupForm.password} onChange={handleSignupInputChange} className="w-full bg-raised text-ink placeholder-ink-subtle px-4 py-3 pr-12 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors" placeholder="Create a strong password" required />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-ink-muted hover:text-accent-hover transition-colors">
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
-                <input type="password" name="confirmPassword" id="confirmPassword" value={signupForm.confirmPassword} onChange={handleSignupInputChange} className="w-full bg-gray-800/50 text-white placeholder-gray-500 px-4 py-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Confirm your password" required />
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-ink-muted mb-2">Confirm Password</label>
+                <input type="password" name="confirmPassword" id="confirmPassword" value={signupForm.confirmPassword} onChange={handleSignupInputChange} className="w-full bg-raised text-ink placeholder-ink-subtle px-4 py-3 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors" placeholder="Confirm your password" required />
               </div>
-              <button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 mt-2 shadow-lg flex items-center justify-center">
+              <button type="submit" className="w-full bg-accent hover:bg-accent-hover text-accent-ink font-semibold py-3 px-4 rounded-lg transition-colors mt-2 flex items-center justify-center">
                 Create Account <ChevronRight className="ml-2 h-5 w-5" />
               </button>
             </form>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-700"></span>
+                <span className="w-full border-t border-line-strong"></span>
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-gray-900/50 px-2 text-gray-400 backdrop-blur-sm">Or sign up with</span>
+              <div className="relative flex justify-center text-xs uppercase tracking-wider">
+                <span className="bg-surface/50 px-2 text-ink-muted backdrop-blur-sm">Or sign up with</span>
               </div>
             </div>
             <button
               onClick={handleGoogleSignIn}
-              className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg">
+              className="w-full flex items-center justify-center gap-2 bg-raised hover:bg-line text-ink font-semibold py-3 px-4 rounded-lg transition-colors">
               Sign up with Google
             </button>
             
             <div className="mt-6 text-center">
-              <p className="text-gray-400">Already have an account? <button onClick={() => setCurrentView('login')} className="text-blue-400 hover:text-blue-300 transition-colors duration-200 font-semibold">Sign in</button></p>
+              <p className="text-ink-muted">Already have an account? <button onClick={() => setCurrentView('login')} className="text-accent hover:text-accent-hover transition-colors font-semibold">Sign in</button></p>
             </div>
           </div>
         </div>
@@ -513,4 +422,4 @@ const FinzApp = ({ hideHeader = false, onNavigate }) => {
   return null;
 };
 
-export default FinzApp;
+export default Home;

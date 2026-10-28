@@ -1,8 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
 
+// Firebase handles sign-in only. All user data goes through the API to MongoDB.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,12 +15,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
   isSupported()
     .then((supported) => {
-      if (supported) {
-        getAnalytics(app);
-      }
+      if (supported) getAnalytics(app);
     })
     .catch((error) => {
       console.warn('Firebase Analytics is not available in this browser:', error);
@@ -29,5 +27,3 @@ if (typeof window !== 'undefined') {
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-export const db = getFirestore(app);
-export const firebaseProjectId = firebaseConfig.projectId;

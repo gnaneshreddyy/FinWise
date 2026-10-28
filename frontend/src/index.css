@@ -1,1 +1,53 @@
 @import "tailwindcss";
+
+/*
+ * FinWise design tokens.
+ * One neutral ramp, one accent (marigold), and three semantic colors.
+ * Components should only use these names (bg-surface, text-ink-muted, text-gain, ...),
+ * never raw palette classes like bg-gray-900 or text-blue-400.
+ */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Neutrals, darkest to lightest */
+  --color-canvas: #0b0d10;
+  --color-surface: #12151a;
+  --color-raised: #1a1e25;
+  --color-line: #262b33;
+  --color-line-strong: #353b45;
+
+  /* Text */
+  --color-ink: #eceef1;
+  --color-ink-muted: #a3a9b3;
+  --color-ink-subtle: #6b727d;
+
+  /* Brand accent */
+  --color-accent: #e8b04b;
+  --color-accent-hover: #f0c26b;
+  --color-accent-ink: #1a1405;
+
+  /* Semantic */
+  --color-gain: #3fbf8a;
+  --color-loss: #e5675b;
+  --color-warn: #e8894b;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  ::selection {
+    @apply bg-accent/30 text-ink;
+  }
+
+  /* Text fields show focus through their accent border instead. */
+  :focus-visible:not(input, select, textarea) {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+}

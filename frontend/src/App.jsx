@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, firebaseProjectId } from './config/firebase';
+import { auth } from './config/firebase';
 import { getOrCreateUserProfile, getUserProfile } from './services/userProfile';
-import { getUserTransactions, saveUserTransaction } from './services/transactions';
+import {
+  addSampleTransactions,
+  clearSampleTransactions,
+  deleteUserTransaction,
+  getUserTransactions,
+  saveUserTransaction,
+  sortTransactions,
+  updateUserTransaction,
+} from './services/transactions';
+import { generateSampleTransactions } from '../../core/finance/sampleData.js';
 import { logout } from './services/authService';
 import Home from './components/Home';
 import Dashboard from './components/Dashboard';
@@ -13,8 +22,20 @@ import Squads from './components/Squads';
 import UserProfile from './components/UserProfile';
 import Rewards from './components/Rewards';
 import Insights from './components/Insights';
-import Personalization from './components/Personalization';
 import Transactions from './components/Transactions';
+
+function fallbackProfile(currentUser) {
+  return {
+    uid: currentUser.uid,
+    fullName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+    username: (currentUser.email?.split('@')[0] || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+    email: currentUser.email || '',
+    photoURL: currentUser.photoURL || '',
+    squadId: null,
+    squadRole: null,
+    points: { total: 0, actions: [] },
+  };
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -27,103 +48,158 @@ function App() {
 
   const refreshCurrentUserProfile = async () => {
     if (!user?.uid) return null;
-    const profile = await getUserProfile(user.uid);
+    const profile = await getUserProfile();
     setCurrentUserProfile(profile);
     return profile;
   };
 
+  const resetSession = () => {
+    setCurrentUserProfile(null);
+    setSelectedProfile(null);
+    setTransactions([]);
+    setTransactionError(null);
+  };
+
   const handleLogout = async () => {
     try {
-      if (auth.currentUser) {
-        await logout();
-      }
-    } catch {
-      // no-op for mock users
+      if (auth.currentUser) await logout();
     } finally {
       setUser(null);
-      setCurrentUserProfile(null);
-      setSelectedProfile(null);
-      setTransactions([]);
-      setTransactionError(null);
+      resetSession();
       setAppView('dashboard');
     }
   };
 
-  // This effect runs once when the app starts and listens for auth changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      // When the auth state changes, this function is called
-      setUser(currentUser); // Sets the user to the logged-in user or null
+      setUser(currentUser);
       if (!currentUser) {
-        setCurrentUserProfile(null);
-        setSelectedProfile(null);
-        setTransactions([]);
-        setTransactionError(null);
+        resetSession();
         setLoading(false);
         return;
       }
 
       try {
-        const profile = await getOrCreateUserProfile(currentUser);
-        setCurrentUserProfile(profile);
+        setCurrentUserProfile(await getOrCreateUserProfile(currentUser));
       } catch (error) {
         console.error('Failed to load profile from database:', error);
-        setCurrentUserProfile({
-          uid: currentUser.uid,
-          fullName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-          username: (currentUser.email?.split('@')[0] || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-          email: currentUser.email || '',
-          photoURL: currentUser.photoURL || '',
-          squadId: null,
-          squadRole: null,
-          points: { total: 0, actions: [] },
-        });
+        setCurrentUserProfile(fallbackProfile(currentUser));
       }
 
       try {
-        const existingTransactions = await getUserTransactions(currentUser.uid);
-        setTransactions(existingTransactions);
+        setTransactions(await getUserTransactions());
         setTransactionError(null);
       } catch (transactionLoadError) {
-        console.error('Failed to load transactions from database:', {
-          code: transactionLoadError?.code,
-          message: transactionLoadError?.message,
-          uid: currentUser.uid,
-          projectId: firebaseProjectId,
-        });
+        console.error('Failed to load transactions:', transactionLoadError);
         setTransactions([]);
         setTransactionError(
-          transactionLoadError?.code === 'permission-denied'
-            ? `Firestore permissions are blocking transactions for UID ${currentUser.uid}. Confirm your rules are published in project ${firebaseProjectId} and the data path is users/${currentUser.uid}/transactions.`
-            : 'Could not load your saved transactions right now.'
+          transactionLoadError?.status === 0
+            ? transactionLoadError.message
+            : transactionLoadError?.status === 503
+              ? 'The database is unreachable right now. Your data is safe; try again in a moment.'
+              : `Could not load your saved transactions: ${transactionLoadError?.message || 'unknown error'}`
         );
       }
-      setLoading(false); // We're done loading
+      setLoading(false);
     });
 
-    // Cleanup the listener when the component is no longer on the screen
     return () => unsubscribe();
-  }, []); // The empty array [] ensures this effect only runs once
+  }, []);
 
-  // While Firebase is checking the user's auth status, show a loading message
   if (loading) {
-    // You can replace this with a more stylish loading spinner component
     return (
-        <div className="min-h-screen bg-gray-950 flex items-center justify-center text-white">
-            Loading...
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-canvas text-sm text-ink-muted">
+        Loading…
+      </div>
     );
   }
 
-  const handleAddTransaction = async (transaction) => {
+  // Each mutation throws on failure so the calling form can show the error inline.
+  const withPersistence = (action) => async (...args) => {
     if (!user?.uid) return;
-    const result = await saveUserTransaction(user.uid, transaction);
-    if (result.success && result.data) {
-      setTransactions((prev) => [result.data, ...prev]);
+    try {
+      await action(...args);
       setTransactionError(null);
-      return;
+    } catch (error) {
+      console.error('Transaction write failed:', error);
+      throw new Error(error.status === 400 ? error.message : 'Could not save your change. Please try again.');
     }
-    setTransactionError(result.error || 'Could not save transaction. Please try again.');
+  };
+
+  const handleAddTransaction = withPersistence(async (values) => {
+    const created = await saveUserTransaction(values);
+    setTransactions((prev) => sortTransactions([created, ...prev]));
+  });
+
+  const handleUpdateTransaction = withPersistence(async (id, values) => {
+    const updated = await updateUserTransaction(id, values);
+    setTransactions((prev) => sortTransactions(prev.map((item) => (item.id === id ? updated : item))));
+  });
+
+  const handleDeleteTransaction = withPersistence(async (id) => {
+    await deleteUserTransaction(id);
+    setTransactions((prev) => prev.filter((item) => item.id !== id));
+  });
+
+  const handleLoadSample = withPersistence(async () => {
+    const created = await addSampleTransactions(generateSampleTransactions());
+    setTransactions((prev) => sortTransactions([...created, ...prev]));
+  });
+
+  const handleClearSample = withPersistence(async () => {
+    const removed = new Set(await clearSampleTransactions());
+    setTransactions((prev) => prev.filter((item) => !removed.has(item.id)));
+  });
+
+  const dashboard = (
+    <Dashboard
+      user={user}
+      profile={currentUserProfile}
+      transactions={transactions}
+      onAddTransaction={handleAddTransaction}
+      onLoadSample={handleLoadSample}
+      onClearSample={handleClearSample}
+      onChangeView={setAppView}
+      persistenceError={transactionError}
+    />
+  );
+
+  const renderSignedInView = () => {
+    switch (appView) {
+      case 'home':
+        return <Home hideHeader={true} onNavigate={setAppView} />;
+      case 'squads':
+        return (
+          <Squads
+            currentUser={user}
+            currentUserProfile={currentUserProfile}
+            onProfileUpdated={refreshCurrentUserProfile}
+            onOpenProfile={(profile) => { setSelectedProfile(profile); setAppView('profile'); }}
+            onGoToRewards={() => setAppView('rewards')}
+          />
+        );
+      case 'transactions':
+        return (
+          <Transactions
+            transactions={transactions}
+            onUpdateTransaction={handleUpdateTransaction}
+            onDeleteTransaction={handleDeleteTransaction}
+          />
+        );
+      case 'profile':
+        return (
+          <UserProfile
+            profile={selectedProfile || currentUserProfile}
+            onBack={() => setAppView(selectedProfile ? 'squads' : 'dashboard')}
+          />
+        );
+      case 'rewards':
+        return <Rewards onBack={() => setAppView('squads')} profile={currentUserProfile} />;
+      case 'insights':
+        return <Insights transactions={transactions} />;
+      default:
+        return dashboard;
+    }
   };
 
   return (
@@ -146,56 +222,9 @@ function App() {
 
       {appView === 'papertrading' ? (
         <PaperTradingApp onBack={() => setAppView(user ? 'dashboard' : 'home')} />
-      ) : user && (
-        appView === 'home' ? (
-          <Home hideHeader={true} onNavigate={setAppView} />
-        ) : appView === 'dashboard' ? (
-          <Dashboard
-            user={user}
-            profile={currentUserProfile}
-            transactions={transactions}
-            onAddTransaction={handleAddTransaction}
-            persistenceError={transactionError}
-          />
-        ) : appView === 'squads' ? (
-          <Squads
-            currentUser={user}
-            currentUserProfile={currentUserProfile}
-            onProfileUpdated={refreshCurrentUserProfile}
-            onOpenProfile={(profile) => { setSelectedProfile(profile); setAppView('profile'); }}
-            onGoToRewards={() => setAppView('rewards')}
-          />
-        ) : appView === 'transactions' ? (
-          <Transactions transactions={transactions} />
-        ) : appView === 'profile' ? (
-          <UserProfile
-            profile={selectedProfile || currentUserProfile}
-            onBack={() => setAppView(selectedProfile ? 'squads' : 'dashboard')}
-          />
-        ) : appView === 'rewards' ? (
-          <Rewards onBack={() => setAppView('squads')} profile={currentUserProfile} />
-        ) : appView === 'insights' ? (
-          <Insights transactions={transactions} />
-        ) : appView === 'personalization' ? (
-          <Personalization
-            onBack={() => setAppView('dashboard')}
-          />
-        ) : (
-          <Dashboard
-            user={user}
-            profile={currentUserProfile}
-            transactions={transactions}
-            onAddTransaction={handleAddTransaction}
-            persistenceError={transactionError}
-          />
-        )
-      )}
+      ) : user && renderSignedInView()}
 
-      <Chatbot
-        user={user}
-        profile={currentUserProfile}
-        transactions={transactions}
-      />
+      {user && <Chatbot transactionCount={transactions.length} />}
     </>
   );
 }

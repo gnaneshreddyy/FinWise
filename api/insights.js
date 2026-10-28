@@ -1,31 +1,38 @@
-/* eslint-env node */
-
-import { generateGroqResponse, stripMarkdownFences } from './_groq.js';
+import { createHandler } from './_lib/http.js';
+import { completeChat } from './_lib/llm.js';
+import { loadUserFinancialData } from './_lib/userData.js';
+import { buildFinancialSnapshot, aggregateExpenses } from '../core/finance/snapshot.js';
 import {
-  buildExpenseInsightsPrompt,
-  normalizeInsightsResponse,
-} from '../backend/src/services/insightsService.js';
+  MIN_EXPENSES_FOR_INSIGHTS,
+  buildFallbackInsights,
+  buildInsightCharts,
+  buildInsightsMessages,
+  parseInsightsCompletion,
+} from '../core/ai/insights.js';
+import { insightsRequestSchema } from '../core/schemas.js';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  try {
-    const { expenseData } = req.body || {};
-
-    if (!Array.isArray(expenseData)) {
-      return res.status(400).json({ error: 'expenseData must be an array' });
+export default createHandler({
+  schema: insightsRequestSchema,
+  rateLimit: { bucket: 'insights', perMinute: 4, perDay: 40 },
+  async handle({ user }) {
+    const { profile, transactions } = await loadUserFinancialData(user.uid);
+    if (aggregateExpenses(transactions).count < MIN_EXPENSES_FOR_INSIGHTS) {
+      return { enoughData: false, insights: [], charts: [], source: 'none' };
     }
 
-    const prompt = buildExpenseInsightsPrompt(expenseData);
-    const raw = await generateGroqResponse(prompt, 'json');
-    const parsed = JSON.parse(stripMarkdownFences(raw));
+    const snapshot = buildFinancialSnapshot(transactions, { profile });
+    const charts = buildInsightCharts(transactions);
 
-    return res.status(200).json(normalizeInsightsResponse(parsed, expenseData));
-  } catch (error) {
-    console.error('Failed to generate insights:', error);
-    return res.status(500).json({ error: error.message || 'Failed to generate insights' });
-  }
-}
+    let insights = null;
+    try {
+      const { content } = await completeChat({ messages: buildInsightsMessages(snapshot), json: true });
+      insights = parseInsightsCompletion(content);
+    } catch (error) {
+      console.warn('Insights completion failed, using computed takeaways:', error.message);
+    }
+
+    return insights
+      ? { enoughData: true, insights, charts, source: 'ai' }
+      : { enoughData: true, insights: buildFallbackInsights(snapshot), charts, source: 'computed' };
+  },
+});

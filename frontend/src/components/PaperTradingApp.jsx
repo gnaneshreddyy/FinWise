@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, BarChart3, Wallet, History, DollarSign, IndianRupee, RefreshCw, ArrowLeft } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { colors } from '../theme';
 
 function loadJsonFromStorage(key, fallback) {
   try {
@@ -332,29 +333,29 @@ const PaperTradingApp = ({ onBack }) => {
     const maxSellQuantity = portfolio.holdings[stock.symbol]?.quantity || 0;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-lg p-6 w-96">
-          <h3 className="text-xl font-bold mb-4 text-white">Trade {stock.name}</h3>
+      <div className="fixed inset-0 bg-canvas/50 flex items-center justify-center z-50">
+        <div className="bg-raised rounded-lg p-6 w-96">
+          <h3 className="text-xl font-bold mb-4 text-ink">Trade {stock.name}</h3>
           
           <div className="mb-4">
-            <p className="text-gray-400 text-sm">Current Price: {formatCurrency(stock.price)}</p>
+            <p className="text-ink-muted text-sm">Current Price: {formatCurrency(stock.price)}</p>
             {tradeType === 'SELL' && (
-              <p className="text-gray-400 text-sm">Available: {maxSellQuantity} shares</p>
+              <p className="text-ink-muted text-sm">Available: {maxSellQuantity} shares</p>
             )}
           </div>
           
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2 text-white">Trade Type</label>
+            <label className="block text-sm font-medium mb-2 text-ink">Trade Type</label>
             <div className="flex space-x-2">
               <button
                 onClick={() => setTradeType('BUY')}
-                className={`px-4 py-2 rounded ${tradeType === 'BUY' ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-300'}`}
+                className={`px-4 py-2 rounded ${tradeType === 'BUY' ? 'bg-gain text-canvas' : 'bg-line-strong text-canvas-muted'}`}
               >
                 BUY
               </button>
               <button
                 onClick={() => setTradeType('SELL')}
-                className={`px-4 py-2 rounded ${tradeType === 'SELL' ? 'bg-red-500 text-white' : 'bg-gray-600 text-gray-300'}`}
+                className={`px-4 py-2 rounded ${tradeType === 'SELL' ? 'bg-loss text-canvas' : 'bg-line-strong text-canvas-muted'}`}
                 disabled={maxSellQuantity === 0}
               >
                 SELL
@@ -363,30 +364,30 @@ const PaperTradingApp = ({ onBack }) => {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2 text-white">Quantity</label>
+            <label className="block text-sm font-medium mb-2 text-ink">Quantity</label>
             <input
               type="number"
               value={quantity}
               onChange={(e) => setQuantity(Math.max(1, Math.min(parseInt(e.target.value) || 1, tradeType === 'SELL' ? maxSellQuantity : 9999)))}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              className="w-full p-2 border border-line-strong rounded bg-line text-ink"
               min="1"
             />
           </div>
 
           <div className="mb-4">
-            <p className="text-sm text-white">Total: {formatCurrency(stock.price * quantity)}</p>
+            <p className="text-sm text-ink">Total: {formatCurrency(stock.price * quantity)}</p>
           </div>
 
           <div className="flex space-x-2">
             <button
               onClick={handleTrade}
-              className="flex-1 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+              className="flex-1 bg-accent text-accent-ink py-2 px-4 rounded hover:bg-accent-hover"
             >
               Execute Trade
             </button>
             <button
               onClick={onClose}
-              className="flex-1 bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700"
+              className="flex-1 bg-line-strong text-ink py-2 px-4 rounded hover:bg-line"
             >
               Cancel
             </button>
@@ -397,33 +398,33 @@ const PaperTradingApp = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-surface text-ink">
       {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-950/90 p-4">
+      <header className="border-b border-line bg-canvas/90 p-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
             {onBack ? (
               <button
                 onClick={onBack}
-                className="p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white"
+                className="p-2 rounded-lg text-ink-muted hover:bg-line hover:text-ink"
                 aria-label="Back"
               >
                 <ArrowLeft size={20} />
               </button>
             ) : null}
-            <h1 className="text-2xl font-bold text-blue-400">Investr</h1>
+            <h1 className="text-2xl font-bold text-accent">Investr</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex bg-gray-700 rounded-lg p-1">
+            <div className="flex bg-line rounded-lg p-1">
               <button
                 onClick={() => setSelectedMarket('US')}
-                className={`px-4 py-2 rounded ${selectedMarket === 'US' ? 'bg-blue-500 text-white' : 'text-gray-300'}`}
+                className={`px-4 py-2 rounded ${selectedMarket === 'US' ? 'bg-accent text-accent-ink' : 'text-accent-ink-muted'}`}
               >
                 US
               </button>
               <button
                 onClick={() => setSelectedMarket('India')}
-                className={`px-4 py-2 rounded ${selectedMarket === 'India' ? 'bg-blue-500 text-white' : 'text-gray-300'}`}
+                className={`px-4 py-2 rounded ${selectedMarket === 'India' ? 'bg-accent text-accent-ink' : 'text-accent-ink-muted'}`}
               >
                 India
               </button>
@@ -434,12 +435,12 @@ const PaperTradingApp = ({ onBack }) => {
 
       <div className="flex">
         {/* Sidebar */}
-        <div className="w-64 bg-gray-800 min-h-screen p-4">
+        <div className="w-64 bg-raised min-h-screen p-4">
           <nav className="space-y-2">
             <button
               onClick={() => setActiveTab('market')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                activeTab === 'market' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                activeTab === 'market' ? 'bg-accent text-accent-ink' : 'text-accent-ink-muted hover:bg-line'
               }`}
             >
               <BarChart3 size={20} />
@@ -449,7 +450,7 @@ const PaperTradingApp = ({ onBack }) => {
             <button
               onClick={() => setActiveTab('transactions')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                activeTab === 'transactions' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                activeTab === 'transactions' ? 'bg-accent text-accent-ink' : 'text-accent-ink-muted hover:bg-line'
               }`}
             >
               <History size={20} />
@@ -459,7 +460,7 @@ const PaperTradingApp = ({ onBack }) => {
             <button
               onClick={() => setActiveTab('portfolio')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                activeTab === 'portfolio' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                activeTab === 'portfolio' ? 'bg-accent text-accent-ink' : 'text-accent-ink-muted hover:bg-line'
               }`}
             >
               <Wallet size={20} />
@@ -476,16 +477,16 @@ const PaperTradingApp = ({ onBack }) => {
                 <h2 className="text-3xl font-bold">Market Overview</h2>
                 <div className="flex items-center space-x-4">
                   {selectedMarket === 'India' && (
-                    <div className="flex bg-gray-700 rounded-lg p-1">
+                    <div className="flex bg-line rounded-lg p-1">
                       <button
                         onClick={() => setIndianExchange('NSE')}
-                        className={`px-3 py-1 rounded text-sm ${indianExchange === 'NSE' ? 'bg-blue-500 text-white' : 'text-gray-300'}`}
+                        className={`px-3 py-1 rounded text-sm ${indianExchange === 'NSE' ? 'bg-accent text-accent-ink' : 'text-accent-ink-muted'}`}
                       >
                         NSE
                       </button>
                       <button
                         onClick={() => setIndianExchange('BSE')}
-                        className={`px-3 py-1 rounded text-sm ${indianExchange === 'BSE' ? 'bg-blue-500 text-white' : 'text-gray-300'}`}
+                        className={`px-3 py-1 rounded text-sm ${indianExchange === 'BSE' ? 'bg-accent text-accent-ink' : 'text-accent-ink-muted'}`}
                       >
                         BSE
                       </button>
@@ -498,8 +499,8 @@ const PaperTradingApp = ({ onBack }) => {
                         onClick={() => setSelectedTimeframe(period)}
                         className={`px-3 py-1 rounded text-sm transition-colors ${
                           selectedTimeframe === period 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            ? 'bg-accent text-accent-ink' 
+                            : 'bg-line text-ink-muted hover:bg-line-strong'
                         }`}
                       >
                         {period}
@@ -511,13 +512,13 @@ const PaperTradingApp = ({ onBack }) => {
 
               {/* Market Index */}
               {marketData && (
-                <div className="bg-gray-800 rounded-lg p-6 mb-6">
+                <div className="bg-raised rounded-lg p-6 mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-2xl font-bold">{marketData.name}</h3>
                       <div className="flex items-center space-x-4">
                         <span className="text-3xl font-bold">{marketData.value.toLocaleString()}</span>
-                        <div className={`flex items-center space-x-1 ${marketData.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        <div className={`flex items-center space-x-1 ${marketData.change >= 0 ? 'text-gain' : 'text-loss'}`}>
                           {marketData.change >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
                           <span>{formatChange(marketData.changePercent)}</span>
                         </div>
@@ -526,31 +527,31 @@ const PaperTradingApp = ({ onBack }) => {
                   </div>
                   
                   {/* Chart */}
-                  <div className="bg-gray-700 rounded-lg h-64 p-4">
+                  <div className="bg-line rounded-lg h-64 p-4">
                     {chartData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData}>
                           <defs>
                             <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={marketData.change >= 0 ? "#10b981" : "#ef4444"} stopOpacity={0.8}/>
-                              <stop offset="95%" stopColor={marketData.change >= 0 ? "#10b981" : "#ef4444"} stopOpacity={0.1}/>
+                              <stop offset="5%" stopColor={marketData.change >= 0 ? colors.gain : colors.loss} stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor={marketData.change >= 0 ? colors.gain : colors.loss} stopOpacity={0.1}/>
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                          <CartesianGrid strokeDasharray="3 3" stroke={colors.line} />
                           <XAxis 
                             dataKey="time" 
-                            stroke="#9ca3af" 
+                            stroke={colors.inkSubtle} 
                             fontSize={12}
                             interval="preserveStartEnd"
                           />
                           <YAxis 
-                            stroke="#9ca3af" 
+                            stroke={colors.inkSubtle} 
                             fontSize={12}
                             domain={['dataMin - 50', 'dataMax + 50']}
                           />
                           <Tooltip 
                             contentStyle={{ 
-                              backgroundColor: '#374151', 
+                              backgroundColor: colors.line, 
                               border: 'none', 
                               borderRadius: '8px',
                               color: '#fff'
@@ -560,7 +561,7 @@ const PaperTradingApp = ({ onBack }) => {
                           <Area
                             type="monotone"
                             dataKey="price"
-                            stroke={marketData.change >= 0 ? "#10b981" : "#ef4444"}
+                            stroke={marketData.change >= 0 ? colors.gain : colors.loss}
                             fillOpacity={1}
                             fill="url(#colorPrice)"
                             strokeWidth={2}
@@ -570,7 +571,7 @@ const PaperTradingApp = ({ onBack }) => {
                     ) : (
                       <div className="flex items-center justify-center h-full">
                         <RefreshCw className="animate-spin" size={32} />
-                        <span className="ml-2 text-gray-400">Loading chart...</span>
+                        <span className="ml-2 text-ink-muted">Loading chart...</span>
                       </div>
                     )}
                   </div>
@@ -578,24 +579,24 @@ const PaperTradingApp = ({ onBack }) => {
               )}
 
               {/* Stocks */}
-              <div className="bg-gray-800 rounded-lg p-6">
+              <div className="bg-raised rounded-lg p-6">
                 <h3 className="text-xl font-bold mb-4">Popular Stocks</h3>
                 <div className="space-y-4">
                   {stocks.map((stock) => {
                     const miniChartData = generateChartData(stock.price).slice(-10);
                     
                     return (
-                      <div key={stock.symbol} className="border border-gray-700 rounded-lg p-4 hover:bg-gray-700">
+                      <div key={stock.symbol} className="border border-line-strong rounded-lg p-4 hover:bg-line">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-4">
                               <div>
                                 <h4 className="font-mono font-bold text-lg">{stock.symbol}</h4>
-                                <p className="text-gray-400 text-sm">{stock.name}</p>
+                                <p className="text-ink-muted text-sm">{stock.name}</p>
                               </div>
                               <div className="text-right">
                                 <p className="text-2xl font-bold">{formatCurrency(stock.price)}</p>
-                                <p className={`text-sm ${stock.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                <p className={`text-sm ${stock.change >= 0 ? 'text-gain' : 'text-loss'}`}>
                                   {formatChange(stock.change)}
                                 </p>
                               </div>
@@ -609,7 +610,7 @@ const PaperTradingApp = ({ onBack }) => {
                                 <Line 
                                   type="monotone" 
                                   dataKey="price" 
-                                  stroke={stock.change >= 0 ? "#10b981" : "#ef4444"}
+                                  stroke={stock.change >= 0 ? colors.gain : colors.loss}
                                   strokeWidth={2}
                                   dot={false}
                                 />
@@ -618,10 +619,10 @@ const PaperTradingApp = ({ onBack }) => {
                           </div>
                           
                           <div className="text-right space-y-2">
-                            <p className="text-gray-400 text-sm">Volume: {stock.volume}</p>
+                            <p className="text-ink-muted text-sm">Volume: {stock.volume}</p>
                             <button
                               onClick={() => setSelectedStock(stock)}
-                              className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-sm"
+                              className="bg-accent hover:bg-accent-hover px-4 py-2 rounded text-sm"
                             >
                               Trade
                             </button>
@@ -638,39 +639,39 @@ const PaperTradingApp = ({ onBack }) => {
           {activeTab === 'transactions' && (
             <div>
               <h2 className="text-3xl font-bold mb-6">Completed Transactions</h2>
-              <div className="bg-gray-800 rounded-lg p-6">
+              <div className="bg-raised rounded-lg p-6">
                 {transactions.length === 0 ? (
                   <div className="text-center py-8">
-                    <History size={48} className="mx-auto mb-2 text-gray-500" />
-                    <p className="text-gray-400">No completed transactions yet</p>
-                    <p className="text-sm text-gray-500">Complete a buy-sell cycle to see transactions here</p>
+                    <History size={48} className="mx-auto mb-2 text-ink-subtle" />
+                    <p className="text-ink-muted">No completed transactions yet</p>
+                    <p className="text-sm text-ink-subtle">Complete a buy-sell cycle to see transactions here</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {transactions.map((transaction) => (
                       <div 
                         key={transaction.id} 
-                        className={`border-l-4 ${transaction.totalPL >= 0 ? 'border-green-400 bg-green-900/20' : 'border-red-400 bg-red-900/20'} rounded-lg p-4`}
+                        className={`border-l-4 ${transaction.totalPL >= 0 ? 'border-gain bg-gain/20' : 'border-loss bg-loss/20'} rounded-lg p-4`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-4">
                               <div>
                                 <h4 className="font-mono font-bold text-lg">{transaction.symbol}</h4>
-                                <p className="text-gray-400 text-sm">{transaction.name}</p>
+                                <p className="text-ink-muted text-sm">{transaction.name}</p>
                               </div>
                               
                               <div className="text-center">
-                                <p className="text-sm text-gray-400">Quantity</p>
+                                <p className="text-sm text-ink-muted">Quantity</p>
                                 <p className="font-bold">{transaction.quantity}</p>
                               </div>
                               
                               <div className="text-center">
-                                <p className="text-sm text-gray-400">P&L</p>
-                                <p className={`font-bold text-lg ${transaction.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                <p className="text-sm text-ink-muted">P&L</p>
+                                <p className={`font-bold text-lg ${transaction.totalPL >= 0 ? 'text-gain' : 'text-loss'}`}>
                                   {transaction.totalPL >= 0 ? '+' : ''}{formatCurrency(transaction.totalPL)}
                                 </p>
-                                <p className={`text-sm ${transaction.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                <p className={`text-sm ${transaction.totalPL >= 0 ? 'text-gain' : 'text-loss'}`}>
                                   ({transaction.plPercent >= 0 ? '+' : ''}{transaction.plPercent.toFixed(2)}%)
                                 </p>
                               </div>
@@ -678,7 +679,7 @@ const PaperTradingApp = ({ onBack }) => {
                           </div>
                           
                           <button
-                            className="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded-lg text-sm"
+                            className="bg-accent hover:bg-accent-hover px-4 py-2 rounded-lg text-sm"
                             onClick={() => alert(`AI Analysis for ${transaction.symbol}: This trade resulted in a ${transaction.totalPL >= 0 ? 'profit' : 'loss'} of ${formatCurrency(Math.abs(transaction.totalPL))}`)}
                           >
                             AI Overview
@@ -698,32 +699,32 @@ const PaperTradingApp = ({ onBack }) => {
               
               {/* Portfolio Summary */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div className="bg-gray-800 rounded-lg p-6">
+                <div className="bg-raised rounded-lg p-6">
                   <div className="flex items-center space-x-3">
                     {selectedMarket === 'US' ? <DollarSign size={24} /> : <IndianRupee size={24} />}
                     <div>
-                      <p className="text-gray-400 text-sm">Cash Balance</p>
+                      <p className="text-ink-muted text-sm">Cash Balance</p>
                       <p className="text-2xl font-bold">{formatCurrency(portfolio.balance)}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-800 rounded-lg p-6">
+                <div className="bg-raised rounded-lg p-6">
                   <div className="flex items-center space-x-3">
                     <Wallet size={24} />
                     <div>
-                      <p className="text-gray-400 text-sm">Total Portfolio</p>
+                      <p className="text-ink-muted text-sm">Total Portfolio</p>
                       <p className="text-2xl font-bold">{formatCurrency(portfolio.totalValue)}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-800 rounded-lg p-6">
+                <div className="bg-raised rounded-lg p-6">
                   <div className="flex items-center space-x-3">
                     <TrendingUp size={24} />
                     <div>
-                      <p className="text-gray-400 text-sm">Total P&L</p>
-                      <p className={`text-2xl font-bold ${portfolio.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <p className="text-ink-muted text-sm">Total P&L</p>
+                      <p className={`text-2xl font-bold ${portfolio.totalPL >= 0 ? 'text-gain' : 'text-loss'}`}>
                         {portfolio.totalPL >= 0 ? '+' : ''}{formatCurrency(portfolio.totalPL)}
                       </p>
                     </div>
@@ -732,16 +733,16 @@ const PaperTradingApp = ({ onBack }) => {
               </div>
 
               {/* Holdings */}
-              <div className="bg-gray-800 rounded-lg p-6 mb-6">
+              <div className="bg-raised rounded-lg p-6 mb-6">
                 <h3 className="text-xl font-bold mb-4">Current Holdings</h3>
                 {Object.keys(portfolio.holdings).length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-400">No holdings yet</p>
+                    <p className="text-ink-muted">No holdings yet</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {Object.entries(portfolio.holdings).map(([symbol, holding]) => (
-                      <div key={symbol} className="flex justify-between items-center py-2 border-b border-gray-700">
+                      <div key={symbol} className="flex justify-between items-center py-2 border-b border-line-strong">
                         <span className="font-mono">{symbol}</span>
                         <span>{holding.quantity} shares</span>
                         <span>{formatCurrency(holding.avgPrice)} avg</span>
@@ -752,17 +753,17 @@ const PaperTradingApp = ({ onBack }) => {
               </div>
 
               {/* Portfolio History */}
-              <div className="bg-gray-800 rounded-lg p-6">
+              <div className="bg-raised rounded-lg p-6">
                 <h3 className="text-xl font-bold mb-4">Portfolio History</h3>
                 {portfolioHistory.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-400">No trades yet</p>
+                    <p className="text-ink-muted">No trades yet</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="text-left text-gray-400 border-b border-gray-700">
+                        <tr className="text-left text-ink-muted border-b border-line-strong">
                           <th className="pb-3">Date</th>
                           <th className="pb-3">Symbol</th>
                           <th className="pb-3">Type</th>
@@ -773,10 +774,10 @@ const PaperTradingApp = ({ onBack }) => {
                       </thead>
                       <tbody>
                         {portfolioHistory.map((trade) => (
-                          <tr key={trade.id} className="border-b border-gray-700">
+                          <tr key={trade.id} className="border-b border-line-strong">
                             <td className="py-4">{trade.date}</td>
                             <td className="py-4 font-mono">{trade.symbol}</td>
-                            <td className={`py-4 font-bold ${trade.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
+                            <td className={`py-4 font-bold ${trade.type === 'BUY' ? 'text-gain' : 'text-loss'}`}>
                               {trade.type}
                             </td>
                             <td className="py-4">{trade.quantity}</td>

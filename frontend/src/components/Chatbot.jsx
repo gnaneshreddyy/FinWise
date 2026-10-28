@@ -1,209 +1,333 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, X, Minimize2 } from 'lucide-react';
-import { requestChatReply } from '../services/backendApi';
-import { buildFinancialContext } from '../services/financialContext';
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Brain, History, MessageCircle, Plus, Send, Trash2, X } from 'lucide-react';
+import {
+  deleteConversation,
+  forgetMemory,
+  getConversation,
+  getMemory,
+  listConversations,
+  requestChatReply,
+} from '../services/backendApi';
 
-const Chatbot = ({ user = null, profile = null, transactions = [] }) => {
+const STARTERS = ['How did I do this month?', 'Where am I overspending?', "I'm saving for a ₹60,000 laptop by March"];
+
+const relativeDay = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+function formatWhen(value) {
+  const date = new Date(value);
+  const days = Math.round((date.setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86_400_000);
+  if (days > -7) return relativeDay.format(days, 'day');
+  return new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+// Models answer in light markdown. Render **bold** as React elements (never raw HTML)
+// and leave everything else as text, which whitespace-pre-wrap already lays out.
+function renderInline(text) {
+  return text.split(/(\*\*[^*\n]+\*\*)/g).map((part, index) =>
+    part.startsWith('**') && part.endsWith('**') && part.length > 4
+      ? <strong key={index} className="font-semibold">{part.slice(2, -2)}</strong>
+      : part.replace(/^#{1,6}\s+/gm, '')
+  );
+}
+
+function IconButton({ label, onClick, active = false, children }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`rounded-md p-1.5 transition-colors ${active ? 'bg-raised text-ink' : 'text-ink-muted hover:bg-raised hover:text-ink'}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+const Chatbot = ({ transactionCount = 0 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { text: "Hi! I'm your AI assistant. How can I help you today?", isBot: true, timestamp: new Date() }
-  ]);
+  const [panel, setPanel] = useState('chat'); // 'chat' | 'history' | 'memory'
+  const [conversation, setConversation] = useState(null); // { id, title }
+  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [conversations, setConversations] = useState(null);
+  const [facts, setFacts] = useState(null);
+  const [panelError, setPanelError] = useState('');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const chatbotRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (isOpen && panel === 'chat') inputRef.current?.focus();
+  }, [isOpen, panel]);
+
+  useEffect(() => {
+    if (!isOpen || panel === 'chat') return;
+    setPanelError('');
+    const load = panel === 'history'
+      ? listConversations().then((data) => setConversations(data.conversations))
+      : getMemory().then((data) => setFacts(data.facts));
+    load.catch((error) => setPanelError(error.message));
+  }, [isOpen, panel]);
+
+  const startNewChat = () => {
+    setConversation(null);
+    setMessages([]);
+    setPanel('chat');
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isOpen]);
-
-  // Handle clicks outside the chatbot to close it
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (chatbotRef.current && !chatbotRef.current.contains(event.target) && isOpen) {
-        setIsOpen(false);
-      }
-    };
-
-    // Add event listener when chatbot is open
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
-    }
-
-    // Cleanup event listeners
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
-
-    const userMessage = {
-      text: inputValue,
-      isBot: false,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
+  const openConversation = async (id) => {
+    setPanel('chat');
     setIsLoading(true);
-
+    setMessages([]);
     try {
-      const financialContext = buildFinancialContext({ user, profile, transactions });
-      const data = await requestChatReply(inputValue, financialContext);
-      
-      const botMessage = {
-        text: data.reply || "I'm sorry, I couldn't generate a response.",
-        isBot: true,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, botMessage]);
+      const data = await getConversation(id);
+      setConversation({ id: data.conversation.id, title: data.conversation.title });
+      setMessages(data.messages.map(({ role, content }) => ({ role, content })));
     } catch (error) {
-      console.error('Error:', error);
-      const errorMessage = {
-        text: "Sorry, I'm having trouble connecting to the server. Please try again later.",
-        isBot: true,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages([{ role: 'assistant', content: error.message, error: true }]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatTime = (timestamp) => {
-    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const removeConversation = async (id) => {
+    try {
+      await deleteConversation(id);
+      setConversations((prev) => prev.filter((item) => item.id !== id));
+      if (conversation?.id === id) startNewChat();
+    } catch (error) {
+      setPanelError(error.message);
+    }
   };
+
+  const removeFact = async (factId) => {
+    try {
+      const data = await forgetMemory(factId);
+      setFacts(data.facts);
+    } catch (error) {
+      setPanelError(error.message);
+    }
+  };
+
+  const sendMessage = async (text) => {
+    const message = text.trim();
+    if (!message || isLoading) return;
+
+    setMessages((prev) => [...prev, { role: 'user', content: message }]);
+    setInputValue('');
+    setIsLoading(true);
+
+    try {
+      const data = await requestChatReply(message, conversation?.id);
+      setConversation(data.conversation);
+      setConversations(null); // list is stale now; refetched next time it opens
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply, remembered: data.remembered }]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: error.message || 'Something went wrong. Please try again.', error: true },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const headerTitle =
+    panel === 'history' ? 'Past conversations' : panel === 'memory' ? 'What I remember' : conversation?.title || 'New conversation';
 
   return (
     <>
-      {/* Global Chat Window - Fixed positioning ensures it appears on all pages */}
       {isOpen && (
-        <div 
-          ref={chatbotRef}
-          className="fixed bottom-20 right-6 w-96 h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-2 duration-300"
+        <div
+          role="dialog"
+          aria-label="FinWise assistant"
+          className="fixed bottom-24 right-4 z-50 flex h-[34rem] max-h-[75vh] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/40 sm:right-6 sm:w-[26rem]"
         >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-              <h3 className="font-semibold">AI Assistant</h3>
+          <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
+            {panel !== 'chat' ? (
+              <IconButton label="Back to chat" onClick={() => setPanel('chat')}>
+                <ArrowLeft size={18} />
+              </IconButton>
+            ) : null}
+            <div className="min-w-0 flex-1 px-1">
+              <h3 className="truncate text-sm font-semibold text-ink">{headerTitle}</h3>
+              {panel === 'chat' ? (
+                <p className="text-xs text-ink-subtle">Answers from your {transactionCount} logged transactions</p>
+              ) : null}
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1 hover:bg-white/20 rounded-full transition-colors duration-200"
-            >
-              <Minimize2 size={18} />
-            </button>
+            <IconButton label="New conversation" onClick={startNewChat}>
+              <Plus size={18} />
+            </IconButton>
+            <IconButton label="Past conversations" active={panel === 'history'} onClick={() => setPanel('history')}>
+              <History size={18} />
+            </IconButton>
+            <IconButton label="What I remember" active={panel === 'memory'} onClick={() => setPanel('memory')}>
+              <Brain size={18} />
+            </IconButton>
+            <IconButton label="Close assistant" onClick={() => setIsOpen(false)}>
+              <X size={18} />
+            </IconButton>
           </div>
 
-          {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}
-              >
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-sm ${
-                    message.isBot
-                      ? 'bg-white text-gray-800 border border-gray-200'
-                      : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                  }`}
+          {panel === 'history' && (
+            <div className="flex-1 overflow-y-auto bg-canvas p-3">
+              {panelError ? <p className="mb-2 text-sm text-loss">{panelError}</p> : null}
+              {conversations === null && !panelError ? <p className="text-sm text-ink-subtle">Loading…</p> : null}
+              {conversations?.length === 0 ? <p className="text-sm text-ink-subtle">No saved conversations yet.</p> : null}
+              <ul className="space-y-1.5">
+                {conversations?.map((item) => (
+                  <li key={item.id} className={`group flex items-start gap-2 rounded-lg border p-3 ${conversation?.id === item.id ? 'border-accent/40 bg-accent/5' : 'border-line bg-surface hover:border-line-strong'}`}>
+                    <button onClick={() => openConversation(item.id)} className="min-w-0 flex-1 text-left">
+                      <p className="truncate text-sm font-medium text-ink">{item.title}</p>
+                      <p className="mt-0.5 truncate text-xs text-ink-subtle">{item.preview}</p>
+                      <p className="mt-1 text-xs text-ink-subtle">{formatWhen(item.updatedAt)} · {item.messageCount} messages</p>
+                    </button>
+                    <button
+                      onClick={() => removeConversation(item.id)}
+                      className="rounded-md p-1 text-ink-subtle opacity-60 hover:bg-raised hover:text-loss group-hover:opacity-100"
+                      aria-label={`Delete conversation ${item.title}`}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {panel === 'memory' && (
+            <div className="flex-1 overflow-y-auto bg-canvas p-3">
+              <p className="mb-3 text-xs leading-relaxed text-ink-subtle">
+                Things you have told the assistant that it keeps across conversations. It never stores account numbers or passwords.
+              </p>
+              {panelError ? <p className="mb-2 text-sm text-loss">{panelError}</p> : null}
+              {facts === null && !panelError ? <p className="text-sm text-ink-subtle">Loading…</p> : null}
+              {facts?.length === 0 ? (
+                <p className="text-sm text-ink-subtle">Nothing yet. Mention a goal or an upcoming expense and it will show up here.</p>
+              ) : null}
+              <ul className="space-y-1.5">
+                {facts?.map((fact) => (
+                  <li key={fact.id} className="flex items-start gap-2 rounded-lg border border-line bg-surface p-3">
+                    <p className="flex-1 text-sm text-ink">{fact.text}</p>
+                    <button
+                      onClick={() => removeFact(fact.id)}
+                      className="rounded-md p-1 text-ink-subtle hover:bg-raised hover:text-loss"
+                      aria-label={`Forget: ${fact.text}`}
+                    >
+                      <X size={15} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {facts?.length ? (
+                <button
+                  onClick={() => removeFact(null)}
+                  className="mt-4 text-sm font-medium text-loss hover:underline"
                 >
-                  <p className="text-sm leading-relaxed">{message.text}</p>
-                  <p className={`text-xs mt-1 ${message.isBot ? 'text-gray-500' : 'text-blue-100'}`}>
-                    {formatTime(message.timestamp)}
-                  </p>
-                </div>
-              </div>
-            ))}
-            
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white text-gray-800 border border-gray-200 px-4 py-2 rounded-2xl shadow-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                    </div>
-                    <span className="text-xs text-gray-500">Thinking...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input Section */}
-          <div className="p-4 bg-white border-t border-gray-200">
-            <div className="flex items-center space-x-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage(e);
-                  }
-                }}
-                placeholder="Type your message..."
-                disabled={isLoading}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 text-sm"
-              />
-              <button
-                onClick={sendMessage}
-                disabled={isLoading || !inputValue.trim()}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-2 rounded-full hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                <Send size={18} />
-              </button>
+                  Forget everything
+                </button>
+              ) : null}
             </div>
-          </div>
+          )}
+
+          {panel === 'chat' && (
+            <>
+              <div className="flex-1 space-y-3 overflow-y-auto bg-canvas p-4">
+                {messages.length === 0 && !isLoading ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-ink-muted">Ask about your own spending, or tell me about a goal. A few ideas:</p>
+                    {STARTERS.map((starter) => (
+                      <button
+                        key={starter}
+                        onClick={() => sendMessage(starter)}
+                        className="block w-full rounded-lg border border-line bg-surface px-3 py-2 text-left text-sm text-ink transition-colors hover:border-line-strong"
+                      >
+                        {starter}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  messages.map((message, index) => (
+                    <div key={index} className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      <p
+                        className={`max-w-[85%] whitespace-pre-wrap rounded-xl px-3.5 py-2 text-sm leading-relaxed ${
+                          message.role === 'user'
+                            ? 'bg-accent text-accent-ink'
+                            : message.error
+                              ? 'border border-loss/30 bg-loss/10 text-loss'
+                              : 'bg-raised text-ink'
+                        }`}
+                      >
+                        {message.role === 'assistant' && !message.error ? renderInline(message.content) : message.content}
+                      </p>
+                      {message.remembered?.length ? (
+                        <button
+                          onClick={() => setPanel('memory')}
+                          className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-subtle hover:text-ink-muted"
+                        >
+                          <Brain size={12} className="text-accent" />
+                          Remembered: {message.remembered.map((fact) => fact.text).join(' · ')}
+                        </button>
+                      ) : null}
+                    </div>
+                  ))
+                )}
+
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="flex gap-1 rounded-xl bg-raised px-3.5 py-3" aria-label="Assistant is typing">
+                      {[0, 0.15, 0.3].map((delay) => (
+                        <span key={delay} className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-subtle" style={{ animationDelay: `${delay}s` }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <form
+                className="flex items-center gap-2 border-t border-line bg-surface p-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  sendMessage(inputValue);
+                }}
+              >
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={inputValue}
+                  onChange={(event) => setInputValue(event.target.value)}
+                  placeholder="Ask about your money…"
+                  maxLength={1000}
+                  disabled={isLoading}
+                  className="flex-1 rounded-lg border border-line bg-raised px-3.5 py-2 text-sm text-ink placeholder-ink-subtle focus:border-accent focus:outline-none disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || !inputValue.trim()}
+                  className="rounded-lg bg-accent p-2 text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Send"
+                >
+                  <Send size={18} />
+                </button>
+              </form>
+            </>
+          )}
         </div>
       )}
 
-      {/* Global Floating Button - Always visible across all pages */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-500/30 ${
-            isOpen 
-              ? 'bg-gray-600 hover:bg-gray-700' 
-              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
-          }`}
-        >
-          {isOpen ? (
-            <X size={24} className="text-white" />
-          ) : (
-            <MessageCircle size={24} className="text-white" />
-          )}
-          
-          {/* Notification Badge (optional - you can show unread messages) */}
-          {!isOpen && (
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-          )}
-        </button>
-      </div>
+      <button
+        onClick={() => setIsOpen((open) => !open)}
+        className={`fixed bottom-6 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-xl shadow-black/40 transition-colors sm:right-6 ${
+          isOpen ? 'border border-line bg-raised text-ink hover:bg-line' : 'bg-accent text-accent-ink hover:bg-accent-hover'
+        }`}
+        aria-label={isOpen ? 'Close assistant' : 'Open assistant'}
+      >
+        {isOpen ? <X size={22} /> : <MessageCircle size={22} />}
+      </button>
     </>
   );
 };
